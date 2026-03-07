@@ -20,8 +20,12 @@
 - Инструменты: Git, GitHub
 
 ## Как запустить проект
-1. git clone https://github.com/Products-TeamU/SmartFridge.git
-2. ...
+1. склонировать репозиторий: git clone https://github.com/Products-TeamU/SmartFridge.git (Либо если уже есть репозиторий: git fetch и: git pull)
+2. перейти на нужную ветку: git switch имя_ветки
+3. перейти в саму папку проекта: cd путь_проекта
+4. установить все зависимости: npm install
+5. 1. если используете QR код: npx expo start
+   2. если используете Android-эмуляторе: npx expo run:android (если возникает ошибка, перед этой командой используйте: echo "sdk.dir=C:/Users/ИМЯ_ПОЛЬЗОВАТЕЛЯ/AppData/Local/Android/Sdk" > android/local.properties) 
 
 ## Ссылки 
 - [Макет в Figma](https://figma.com)"ещё не готово"
