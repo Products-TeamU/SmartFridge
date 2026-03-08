@@ -21,7 +21,14 @@
 
 ## Как запустить проект
 1. git clone https://github.com/Products-TeamU/SmartFridge.git
-2. ...
+2. В Github Desktop нажимаешь на нашу ветку Backend, и Open in VS code
+3. Ты увидишь в проекте файл .env.example, тебе надо будет создать файл .env (по настройкам он уже есть в .gitignore) и скопировать сдержимое файла .env.example
+4. В терминале написать команду npm install (она установит все необходимые зависимости)
+5. Теперь про файл .env:
+- строка JWT - создать командой:
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+- зайти на сайт https://cloud.mongodb.com/ и зарегистрироваться, дальше по инструкции (скину word документом)
+6. Запустить проект командой npm run dev
 
-## Ссылки 
+
 - [Макет в Figma](https://figma.com)"ещё не готово"
