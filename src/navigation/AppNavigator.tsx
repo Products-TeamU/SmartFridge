@@ -13,10 +13,7 @@ const Tab = createBottomTabNavigator();
 
 function AuthStack() {
   return (
-    <Stack.Navigator
-      id="AuthStack" 
-      screenOptions={{ headerShown: false }}
-    >
+    <Stack.Navigator id="AuthStack" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
     </Stack.Navigator>
@@ -25,7 +22,7 @@ function AuthStack() {
 
 function MainTabs() {
   return (
-    <Tab.Navigator id="MainTabs"> {/* добавляем id */}
+    <Tab.Navigator id="MainTabs">
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Главная' }} />
     </Tab.Navigator>
   );

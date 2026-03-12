@@ -1,18 +1,45 @@
 import React, { useState } from 'react';
-import { VStack, Text, FormControl, FormControlLabel, FormControlLabelText, Input, InputField, Button, ButtonText } from '@gluestack-ui/themed';
-import { Alert } from 'react-native';
+import {
+  VStack,
+  Text,
+  FormControl,
+  FormControlLabel,
+  FormControlLabelText,
+  Input,
+  InputField,
+  Button,
+  ButtonText,
+  Alert,
+  AlertText,
+  Spinner,
+} from '@gluestack-ui/themed';
+import { Alert as RNAlert } from 'react-native';
+import { useAuthStore } from '../store/authStore';
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const { login, isLoading, error } = useAuthStore();
 
-  const handleLogin = () => {
-    Alert.alert('Вход', `Email: ${email}\nПароль: ${password}`);
-  };
+const handleLogin = async () => {
+  console.log('🟢 handleLogin вызван с email:', email);
+  if (!email || !password) {
+    RNAlert.alert('Ошибка', 'Заполните все поля');
+    return;
+  }
+  console.log('➡️ Вызов login из store...');
+  const success = await login(email, password);
+  console.log('🔁 Результат login:', success ? 'успех' : 'неудача');
+  if (success) {
+    console.log('🎉 Успешный вход, навигация должна переключиться');
+    // Навигация переключится автоматически, если token обновился в store
+  }
+};
 
   return (
     <VStack flex={1} justifyContent="center" px="$4" space="lg" bg="$white">
       <Text size="2xl" bold textAlign="center">Вход</Text>
+
       <FormControl>
         <FormControlLabel>
           <FormControlLabelText>Email</FormControlLabelText>
@@ -27,6 +54,7 @@ export default function LoginScreen({ navigation }: any) {
           />
         </Input>
       </FormControl>
+
       <FormControl>
         <FormControlLabel>
           <FormControlLabelText>Пароль</FormControlLabelText>
@@ -40,9 +68,21 @@ export default function LoginScreen({ navigation }: any) {
           />
         </Input>
       </FormControl>
-      <Button onPress={handleLogin}>
-        <ButtonText>Войти</ButtonText>
-      </Button>
+
+      {error && (
+        <Alert action="error">
+          <AlertText>{error}</AlertText>
+        </Alert>
+      )}
+
+      {isLoading ? (
+        <Spinner size="large" />
+      ) : (
+        <Button onPress={handleLogin}>
+          <ButtonText>Войти</ButtonText>
+        </Button>
+      )}
+
       <Button variant="link" onPress={() => navigation.navigate('Register')}>
         <ButtonText>Нет аккаунта? Зарегистрироваться</ButtonText>
       </Button>
