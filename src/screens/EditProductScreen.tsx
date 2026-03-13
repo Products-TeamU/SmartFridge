@@ -33,20 +33,21 @@ import { Platform } from 'react-native';
 
 const UNITS = ['шт', 'кг', 'л', 'г', 'мл', 'уп'];
 
-export default function AddProductScreen({ navigation }: any) {
+export default function EditProductScreen({ route, navigation }: any) {
+  const { product } = route.params;
   const toast = useToast();
-  const { addProduct } = useProductStore();
+  const { updateProduct } = useProductStore();
 
-  const [name, setName] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [unit, setUnit] = useState('шт');
-  const [expiryDate, setExpiryDate] = useState(new Date());
-  const [category, setCategory] = useState('');
-  const [price, setPrice] = useState('');
+  const [name, setName] = useState(product.name);
+  const [quantity, setQuantity] = useState(String(product.quantity));
+  const [unit, setUnit] = useState(product.unit);
+  const [expiryDate, setExpiryDate] = useState(new Date(product.expiryDate));
+  const [category, setCategory] = useState(product.category || '');
+  const [price, setPrice] = useState(product.price ? String(product.price) : '');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const isSubmittingRef = useRef(false);
+  const isSubmittingRef = useRef(false); // реф для мгновенной блокировки
 
   const validate = () => {
     const newErrors: typeof errors = {};
@@ -60,6 +61,7 @@ export default function AddProductScreen({ navigation }: any) {
   };
 
   const handleSave = async () => {
+    // Мгновенная проверка через реф
     if (isSubmittingRef.current) return;
     if (!validate()) return;
 
@@ -67,7 +69,7 @@ export default function AddProductScreen({ navigation }: any) {
     setIsSubmitting(true);
 
     try {
-      await addProduct({
+      await updateProduct(product._id, {
         name: name.trim(),
         quantity: parseFloat(quantity),
         unit,
@@ -80,7 +82,7 @@ export default function AddProductScreen({ navigation }: any) {
         placement: 'top',
         render: ({ id }) => (
           <Toast nativeID={id} action="success" variant="solid">
-            <ToastTitle>Продукт добавлен</ToastTitle>
+            <ToastTitle>Продукт обновлён</ToastTitle>
           </Toast>
         ),
       });
@@ -91,16 +93,16 @@ export default function AddProductScreen({ navigation }: any) {
         placement: 'top',
         render: ({ id }) => (
           <Toast nativeID={id} action="error" variant="solid">
-            <ToastTitle>Ошибка при добавлении</ToastTitle>
+            <ToastTitle>Ошибка при обновлении</ToastTitle>
           </Toast>
         ),
       });
     } finally {
-      // Небольшая задержка перед сбросом флага, чтобы предотвратить повторные клики
+      // Задержка 150 мс перед сбросом флага
       setTimeout(() => {
         isSubmittingRef.current = false;
         setIsSubmitting(false);
-      }, 150);
+      }, 200);
     }
   };
 
@@ -111,31 +113,25 @@ export default function AddProductScreen({ navigation }: any) {
 
   return (
     <VStack flex={1} bg="$backgroundLight100" p="$4" space="lg">
-      {/* Форма без изменений */}
       <FormControl isInvalid={!!errors.name}>
         <FormControlLabel>
           <FormControlLabelText>Название</FormControlLabelText>
         </FormControlLabel>
         <Input>
-          <InputField
-            placeholder="Например, Молоко"
-            value={name}
-            onChangeText={setName}
-          />
+          <InputField value={name} onChangeText={setName} />
         </Input>
         <FormControlError>
           <FormControlErrorText>{errors.name}</FormControlErrorText>
         </FormControlError>
       </FormControl>
 
-      <HStack space="sm" justifyContent="space-between">
+      <HStack space="sm">
         <FormControl isInvalid={!!errors.quantity} flex={1}>
           <FormControlLabel>
             <FormControlLabelText>Количество</FormControlLabelText>
           </FormControlLabel>
           <Input>
             <InputField
-              placeholder="2"
               keyboardType="numeric"
               value={quantity}
               onChangeText={setQuantity}
@@ -151,7 +147,7 @@ export default function AddProductScreen({ navigation }: any) {
             <FormControlLabelText>Ед. изм.</FormControlLabelText>
           </FormControlLabel>
           <Select selectedValue={unit} onValueChange={setUnit}>
-            <SelectTrigger variant="outline" size="md">
+            <SelectTrigger>
               <SelectInput placeholder="Выберите" />
               <Icon as={ChevronDownIcon} mr="$3" />
             </SelectTrigger>
@@ -174,11 +170,7 @@ export default function AddProductScreen({ navigation }: any) {
         <FormControlLabel>
           <FormControlLabelText>Срок годности</FormControlLabelText>
         </FormControlLabel>
-        <Button
-          variant="outline"
-          onPress={() => setShowDatePicker(true)}
-          justifyContent="flex-start"
-        >
+        <Button variant="outline" onPress={() => setShowDatePicker(true)}>
           <ButtonText>{expiryDate.toLocaleDateString()}</ButtonText>
         </Button>
         {showDatePicker && (
@@ -199,11 +191,7 @@ export default function AddProductScreen({ navigation }: any) {
           <FormControlLabelText>Категория (необязательно)</FormControlLabelText>
         </FormControlLabel>
         <Input>
-          <InputField
-            placeholder="Например, Молочные"
-            value={category}
-            onChangeText={setCategory}
-          />
+          <InputField value={category} onChangeText={setCategory} />
         </Input>
       </FormControl>
 
@@ -213,7 +201,6 @@ export default function AddProductScreen({ navigation }: any) {
         </FormControlLabel>
         <Input>
           <InputField
-            placeholder="99.90"
             keyboardType="numeric"
             value={price}
             onChangeText={setPrice}
@@ -222,11 +209,21 @@ export default function AddProductScreen({ navigation }: any) {
       </FormControl>
 
       <HStack space="md" mt="$4">
-        <Button flex={1} variant="outline" onPress={() => navigation.goBack()} isDisabled={isSubmitting}>
+        <Button
+          flex={1}
+          variant="outline"
+          onPress={() => navigation.goBack()}
+          isDisabled={isSubmitting}
+        >
           <ButtonText>Отмена</ButtonText>
         </Button>
-        <Button flex={1} bg="$blue500" onPress={handleSave} isDisabled={isSubmitting}>
-          <ButtonText>Сохранить</ButtonText>
+        <Button
+          flex={1}
+          bg="$blue500"
+          onPress={handleSave}
+          isDisabled={isSubmitting}
+        >
+          <ButtonText>{isSubmitting ? 'Сохранение...' : 'Сохранить'}</ButtonText>
         </Button>
       </HStack>
     </VStack>
