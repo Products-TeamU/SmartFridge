@@ -15,21 +15,24 @@ interface AuthState {
   error: string | null;
   register: (email: string, password: string, name: string) => Promise<boolean>;
   login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
   loadStoredToken: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
-  isLoading: false,
+  isLoading: true, // начинаем с true, чтобы показать загрузку при старте
   error: null,
 
   register: async (email, password, name) => {
     set({ isLoading: true, error: null });
     try {
-      await api.post('/auth/register', { email, password, name });
-      set({ isLoading: false });
+      const response = await api.post('/auth/register', { email, password, name });
+      const { token, user } = response.data; // сервер должен возвращать token и user
+      await AsyncStorage.setItem('token', token);
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+      set({ token, user, isLoading: false, error: null });
       return true;
     } catch (error: any) {
       const message = error.response?.data?.message || 'Ошибка регистрации';
@@ -38,26 +41,29 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-login: async (email, password) => {
-  console.log('📤 Отправка запроса входа для:', email);
-  set({ isLoading: true, error: null });
-  try {
-    const response = await api.post('/auth/login', { email, password });
-    console.log('✅ Ответ от сервера:', response.data);
-    const { token, user } = response.data;
-    await AsyncStorage.setItem('token', token);
-    console.log('💾 Токен сохранён в AsyncStorage');
-    set({ token, user, isLoading: false });
-    return true;
-  } catch (error: any) {
-    console.error('❌ Ошибка входа:', error.response?.data || error.message);
-    const message = error.response?.data?.message || 'Ошибка входа';
-    set({ error: message, isLoading: false });
-    return false;
-  }
-},
+  login: async (email, password) => {
+    console.log('📤 Отправка запроса входа для:', email);
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      console.log('✅ Ответ от сервера:', response.data);
+      const { token, user } = response.data;
+      await AsyncStorage.setItem('token', token);
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+      console.log('💾 Токен и пользователь сохранены');
+      set({ token, user, isLoading: false });
+      return true;
+    } catch (error: any) {
+      console.error('❌ Ошибка входа:', error.response?.data || error.message);
+      const message = error.response?.data?.message || 'Ошибка входа';
+      set({ error: message, isLoading: false });
+      return false;
+    }
+  },
+
   logout: async () => {
     await AsyncStorage.removeItem('token');
+    await AsyncStorage.removeItem('user');
     set({ user: null, token: null, error: null });
   },
 
@@ -65,14 +71,15 @@ login: async (email, password) => {
     set({ isLoading: true });
     try {
       const token = await AsyncStorage.getItem('token');
-      if (token) {
-        // Можно также запросить данные пользователя по токену, но пока просто сохраняем токен
-        set({ token, isLoading: false });
-        // Здесь можно позже добавить запрос /me, если будет такой эндпоинт
+      const userStr = await AsyncStorage.getItem('user');
+      if (token && userStr) {
+        const user = JSON.parse(userStr);
+        set({ token, user, isLoading: false });
       } else {
-        set({ isLoading: false });
+        set({ token: null, user: null, isLoading: false });
       }
     } catch (error) {
+      console.error('Ошибка загрузки токена:', error);
       set({ isLoading: false });
     }
   },
