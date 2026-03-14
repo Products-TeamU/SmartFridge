@@ -26,20 +26,18 @@ export const useAuthStore = create<AuthState>((set) => ({
   error: null,
 
   register: async (email, password, name) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await api.post('/auth/register', { email, password, name });
-      const { token, user } = response.data; // сервер должен возвращать token и user
-      await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
-      set({ token, user, isLoading: false, error: null });
-      return true;
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Ошибка регистрации';
-      set({ error: message, isLoading: false });
-      return false;
-    }
-  },
+  set({ isLoading: true, error: null });
+  try {
+    // Отправляем запрос на регистрацию
+    await api.post('/auth/register', { email, password, name });
+    // После успешной регистрации сразу логинимся
+    return await useAuthStore.getState().login(email, password);
+  } catch (error: any) {
+    const message = error.response?.data?.message || 'Ошибка регистрации';
+    set({ error: message, isLoading: false });
+    return false;
+  }
+},
 
   login: async (email, password) => {
     console.log('📤 Отправка запроса входа для:', email);

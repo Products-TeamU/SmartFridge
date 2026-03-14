@@ -61,7 +61,7 @@ export default function HomeScreen({ navigation }: any) {
         justifyContent="space-between"
         alignItems="center"
       >
-        <Text fontSize="$xl" fontWeight="$bold">👋 Привет {user?.name || 'Гость'}</Text>
+        <Text fontSize="$xl" fontWeight="$bold">👋 {user?.name || 'Гость'}</Text>
         <Button size="sm" onPress={logout} bg="$red500">
           <ButtonText>Выйти</ButtonText>
         </Button>

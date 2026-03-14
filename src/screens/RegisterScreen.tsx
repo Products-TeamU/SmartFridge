@@ -29,7 +29,7 @@ export default function RegisterScreen({ navigation }: any) {
     }
     const success = await register(email, password, name);
     if (success) {
-      RNAlert.alert('Успех', 'Регистрация прошла успешно. Теперь войдите.');
+      RNAlert.alert('Успех', 'Регистрация прошла успешно!');
       navigation.navigate('Login');
     }
   };
