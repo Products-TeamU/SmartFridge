@@ -6,11 +6,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // -------------------------------------------------
 
 // Адрес для Android эмулятора (специальный адрес для доступа к localhost компьютера)
-const EMULATOR_URL = 'http://10.0.2.2:5000/api';
+const EMULATOR_URL = 'https://smartfridge-ouxh.onrender.com/api';
 
 // Адрес для реального устройства (IP твоего компьютера в локальной сети)
 // Убедись, что IP актуален (может меняться при перезагрузке роутера)
-const PHYSICAL_DEVICE_URL = 'http://10.182.193.13:5000/api';
+const PHYSICAL_DEVICE_URL = 'https://smartfridge-ouxh.onrender.com/api';
 // Адрес для продакшена (когда появится реальный сервер)
 const PRODUCTION_URL = 'https://smartfridge-ouxh.onrender.com/api';// -------------------------------------------------
 // __DEV__ – встроенная переменная React Native:
