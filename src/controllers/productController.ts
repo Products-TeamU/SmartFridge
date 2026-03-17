@@ -83,3 +83,27 @@ export const deleteProduct = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ message: 'Ошибка сервера' });
   }
 };
+
+// Поиск продуктов
+export const searchProducts = async (req: Request, res: Response) => {
+  try {
+    const { q } = req.query;
+    const userId = (req as any).userId; // из authMiddleware
+
+    if (!q || typeof q !== 'string' || q.trim().length < 2) {
+      return res.json([]); // пустой результат при коротком запросе
+    }
+
+    const products = await Product.find({
+      ownerId: userId,
+      name: { $regex: `^${q}`, $options: 'i' } // начинается с q, без учёта регистра
+    })
+      .limit(10)
+      .select('name unit'); // возвращаем только нужные поля
+
+    res.json(products);
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ message: 'Ошибка при поиске' });
+  }
+};

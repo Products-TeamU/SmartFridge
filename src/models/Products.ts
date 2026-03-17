@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, trusted } from 'mongoose';
 
 export interface IProduct extends Document {
   name: string;
@@ -12,7 +12,8 @@ export interface IProduct extends Document {
 }
 
 const ProductSchema: Schema = new Schema({
-  name: { type: String, required: true },
+  name: { type: String, required: true, index: true},
+  isCommon: { type: Boolean, default: false, index: true }, // индекс тоже ускорит фильтрацию
   quantity: { type: Number, required: true, min: 0 },
   unit: { type: String, required: true, default: 'шт' },
   expiryDate: { type: Date, required: true },

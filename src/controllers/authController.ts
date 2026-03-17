@@ -3,7 +3,6 @@ import bcrypt from 'bcrypt';
 import User from '../models/User';
 import jwt from 'jsonwebtoken';
 
-
 export const register = async (req: Request, res: Response) => {
   try {
     const { email, password, name } = req.body;
@@ -23,17 +22,18 @@ export const register = async (req: Request, res: Response) => {
       email,
       passwordHash,
       name,
-    })
-    
+    });
+
+    // Сохраняем пользователя в базу
     await newUser.save();
 
     // Отвечаем клиенту (не возвращаем пароль)
     res.status(201).json({ message: 'Пользователь успешно создан', user: { email, name } });
   } catch (error) {
-  console.error("Ошибка регистрации:", error);
-  const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
-  res.status(500).json({ message: 'Ошибка сервера', error: errorMessage });
-}
+    console.error("Ошибка регистрации:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+    res.status(500).json({ message: 'Ошибка сервера', error: errorMessage });
+  }
 };
 
 export const login = async (req: Request, res: Response) => {

@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/database';
 import productRoutes from './routes/productRoutes';
 import authRoutes from './routes/authRoutes';
+import openFoodFactsRoutes from './routes/openFoodFactsRoutes';
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.use(cors());
 app.use(morgan('dev'));
 
 // Маршруты
+app.use('/api/openfoodfacts', openFoodFactsRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/auth', authRoutes);
 
