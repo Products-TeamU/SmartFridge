@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import CommonProduct from '../models/CommonProduct';
+import CommonProduct from '../models/CommonProduct'; // используем твою модель общих продуктов
 
 export const searchProducts = async (req: Request, res: Response) => {
   try {
@@ -16,11 +16,7 @@ export const searchProducts = async (req: Request, res: Response) => {
 
     res.json(products);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Ошибка' });
+    console.error('Ошибка при поиске:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
   }
-};
-
-export const getProductByBarcode = async (req: Request, res: Response) => {
-  res.status(404).json({ message: 'Not implemented' });
 };
