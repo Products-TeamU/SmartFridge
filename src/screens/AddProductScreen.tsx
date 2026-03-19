@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   VStack,
   HStack,
@@ -25,11 +25,12 @@ import {
   FormControlErrorText,
   Toast,
   ToastTitle,
-  useToast,
+  useToast
 } from '@gluestack-ui/themed';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useProductStore } from '../store/productStore';
-import { Platform } from 'react-native';
+import { Platform, FlatList, TouchableOpacity } from 'react-native';
+import api from '../services/api'; // ✅ импортируем настроенный axios
 
 const UNITS = ['шт', 'кг', 'л', 'г', 'мл', 'уп'];
 
@@ -47,6 +48,41 @@ export default function AddProductScreen({ navigation }: any) {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isSubmittingRef = useRef(false);
+
+  // Состояния для подсказок
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Debounce для поиска через бэкенд
+  useEffect(() => {
+    if (name.trim().length < 2) {
+      setSuggestions([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const response = await api.get(`/common/search?q=${name}`);
+        console.log('Ответ от API:', response.data);
+        setSuggestions(response.data);
+      } catch (error) {
+        console.error('Ошибка при поиске:', error);
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [name]);
+
+  // Выбор подсказки
+  const handleSelect = (product: any) => {
+    console.log('Выбран продукт:', product);
+    setName(product.name);
+    if (product.category) setCategory(product.category);
+    setSuggestions([]); // сразу очищаем подсказки
+  };
 
   const validate = () => {
     const newErrors: typeof errors = {};
@@ -96,7 +132,6 @@ export default function AddProductScreen({ navigation }: any) {
         ),
       });
     } finally {
-      // Небольшая задержка перед сбросом флага, чтобы предотвратить повторные клики
       setTimeout(() => {
         isSubmittingRef.current = false;
         setIsSubmitting(false);
@@ -111,18 +146,51 @@ export default function AddProductScreen({ navigation }: any) {
 
   return (
     <VStack flex={1} bg="$backgroundLight100" p="$4" space="lg">
-      {/* Форма без изменений */}
       <FormControl isInvalid={!!errors.name}>
         <FormControlLabel>
           <FormControlLabelText>Название</FormControlLabelText>
         </FormControlLabel>
         <Input>
           <InputField
-            placeholder="Например, Молоко"
+            placeholder="Например, Молоко (минимум 2 буквы)"
             value={name}
             onChangeText={setName}
           />
         </Input>
+
+        {suggestions.length > 0 && (
+          <VStack
+            bg="$white"
+            borderWidth={1}
+            borderColor="$borderLight200"
+            borderRadius="$sm"
+            mt="$1"
+            maxHeight={200}
+            style={{ overflow: 'hidden' }}
+          >
+            {loading ? (
+              <Text p="$3" color="$textLight400">Загрузка...</Text>
+            ) : (
+              <FlatList
+                data={suggestions}
+                keyExtractor={(item, index) => index.toString()}
+                keyboardShouldPersistTaps="handled"
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    onPress={() => handleSelect(item)}
+                    activeOpacity={0.7}
+                  >
+                    <VStack p="$3" borderBottomWidth={1} borderBottomColor="$borderLight100">
+                      <Text bold>{item.name}</Text>
+                      {item.category && <Text size="xs" color="$textLight500">{item.category}</Text>}
+                    </VStack>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </VStack>
+        )}
+
         <FormControlError>
           <FormControlErrorText>{errors.name}</FormControlErrorText>
         </FormControlError>

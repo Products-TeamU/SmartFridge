@@ -52,7 +52,5 @@
     "tailwindcss": "^3.4.17",
     "typescript": "~5.9.2"
   },
-  "private": true,
-  "optionalDependencies": {
-  }
+  "private": true
 }
