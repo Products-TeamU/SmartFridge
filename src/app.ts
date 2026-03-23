@@ -8,7 +8,10 @@ import productRoutes from './routes/productRoutes';
 import authRoutes from './routes/authRoutes';
 import commonProductRoutes from './routes/commonProductRoutes';
 
-dotenv.config({ path: path.join(__dirname, '../.env') });
+// Загружаем .env только в режиме разработки
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config({ path: path.join(__dirname, '../.env') });
+}
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
