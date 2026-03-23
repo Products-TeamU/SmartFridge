@@ -1,15 +1,21 @@
 import nodemailer from 'nodemailer';
 
+// Настройка транспорта для отправки писем
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure: process.env.SMTP_SECURE === 'true', // обязательно для порта 465
+  host: process.env.SMTP_HOST,       // SMTP-сервер (например, smtp.mail.ru)
+  port: Number(process.env.SMTP_PORT), // порт (465 для SSL, 587 для STARTTLS)
+  secure: process.env.SMTP_SECURE === 'true', // true для порта 465
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
 });
 
+/**
+ * Отправляет письмо со ссылкой для сброса пароля
+ * @param to - email получателя
+ * @param resetLink - полная ссылка для сброса пароля (формируется в контроллере)
+ */
 export const sendResetEmail = async (to: string, resetLink: string) => {
   const mailOptions = {
     from: process.env.SMTP_FROM,

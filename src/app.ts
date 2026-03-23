@@ -2,23 +2,49 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import path from 'path';
 import connectDB from './config/database';
 import productRoutes from './routes/productRoutes';
 import authRoutes from './routes/authRoutes';
 import commonProductRoutes from './routes/commonProductRoutes';
 
-import path from 'path';
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const app = express();
-const PORT = Number(process.env.PORT) || 5000; // <-- исправлено
+const PORT = Number(process.env.PORT) || 5000;
 
 // Middleware
 app.use(express.json());
 app.use(cors());
 app.use(morgan('dev'));
 
-// Маршруты
+// Маршрут для перенаправления на глубокую ссылку
+app.get('/reset-password', (req, res) => {
+  const { token } = req.query;
+  if (!token || typeof token !== 'string') {
+    return res.status(400).send('Неверная ссылка для сброса пароля');
+  }
+  const redirectUrl = `SmartFridge://reset-password?token=${encodeURIComponent(token)}`;
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Сброс пароля SmartFridge</title>
+      <script>
+        window.location.href = "${redirectUrl}";
+      </script>
+    </head>
+    <body>
+      <p>Перенаправление в приложение...</p>
+      <p>Если приложение не открывается, <a href="${redirectUrl}">нажмите здесь</a>.</p>
+    </body>
+    </html>
+  `);
+});
+
+// API маршруты
 app.use('/api/products', productRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/common', commonProductRoutes);

@@ -9,7 +9,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const { email } = req.body;
     const user = await User.findOne({ email });
 
-    // Всегда возвращаем одинаковый ответ для безопасности
     if (!user) {
       return res.status(200).json({ message: 'Если email зарегистрирован, вы получите письмо' });
     }
@@ -19,7 +18,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
     user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 час
     await user.save();
 
-    const resetLink = `SmartFridge://reset-password?token=${token}`; // глубокая ссылка для приложения
+    // Замените домен на актуальный URL вашего бэкенда на Render
+    const resetLink = `https://smartfridge-ouxh.onrender.com/reset-password?token=${token}`;
     await sendResetEmail(user.email, resetLink);
 
     res.status(200).json({ message: 'Письмо для сброса пароля отправлено' });
