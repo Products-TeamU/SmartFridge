@@ -35,9 +35,7 @@ app.get('/reset-password', (req, res) => {
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>Сброс пароля SmartFridge</title>
-      <script>
-        window.location.href = "${redirectUrl}";
-      </script>
+      <meta http-equiv="refresh" content="0; url=${redirectUrl}">
     </head>
     <body>
       <p>Перенаправление в приложение...</p>
