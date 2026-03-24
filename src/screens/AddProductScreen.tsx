@@ -67,6 +67,12 @@ export default function AddProductScreen({ navigation }: any) {
         console.log('Ответ от API:', response.data);
         setSuggestions(response.data);
       } catch (error) {
+              if (error.response) {
+        console.log('Статус ошибки:', error.response.status);
+        console.log('Данные ошибки:', error.response.data);
+      } else {
+        console.log('Ошибка сети или другая:', error.message);
+      }
         console.error('Ошибка при поиске:', error);
       } finally {
         setLoading(false);

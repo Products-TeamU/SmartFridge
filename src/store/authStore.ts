@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
+import { navigationRef } from '../navigation/RootNavigation';
 
 interface User {
   id: string;
@@ -17,27 +18,26 @@ interface AuthState {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   loadStoredToken: () => Promise<void>;
+  resetPassword: (token: string, newPassword: string) => Promise<boolean>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
-  isLoading: true, // начинаем с true, чтобы показать загрузку при старте
+  isLoading: true,
   error: null,
 
   register: async (email, password, name) => {
-  set({ isLoading: true, error: null });
-  try {
-    // Отправляем запрос на регистрацию
-    await api.post('/auth/register', { email, password, name });
-    // После успешной регистрации сразу логинимся
-    return await useAuthStore.getState().login(email, password);
-  } catch (error: any) {
-    const message = error.response?.data?.message || 'Ошибка регистрации';
-    set({ error: message, isLoading: false });
-    return false;
-  }
-},
+    set({ isLoading: true, error: null });
+    try {
+      await api.post('/auth/register', { email, password, name });
+      return await useAuthStore.getState().login(email, password);
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Ошибка регистрации';
+      set({ error: message, isLoading: false });
+      return false;
+    }
+  },
 
   login: async (email, password) => {
     console.log('📤 Отправка запроса входа для:', email);
@@ -63,6 +63,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     await AsyncStorage.removeItem('token');
     await AsyncStorage.removeItem('user');
     set({ user: null, token: null, error: null });
+    if (navigationRef.isReady()) {
+      navigationRef.resetRoot({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      })
+    }
   },
 
   loadStoredToken: async () => {
@@ -79,6 +85,19 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error) {
       console.error('Ошибка загрузки токена:', error);
       set({ isLoading: false });
+    }
+  },
+
+  resetPassword: async (token: string, newPassword: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.post('/auth/reset-password', { token, newPassword });
+      set({ isLoading: false });
+      return true;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Ошибка сброса пароля';
+      set({ error: message, isLoading: false });
+      return false;
     }
   },
 }));

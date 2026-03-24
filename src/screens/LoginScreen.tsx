@@ -1,91 +1,134 @@
 import React, { useState } from 'react';
 import {
   VStack,
-  Text,
+  Center,
   FormControl,
   FormControlLabel,
   FormControlLabelText,
   Input,
+  InputSlot,
   InputField,
   Button,
   ButtonText,
-  Alert,
-  AlertText,
-  Spinner,
+  Text,
+  HStack,
 } from '@gluestack-ui/themed';
-import { Alert as RNAlert } from 'react-native';
+import { Image, TouchableOpacity } from 'react-native';
 import { useAuthStore } from '../store/authStore';
+import Icon from 'react-native-vector-icons/MaterialIcons'; // ← добавить
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login, isLoading, error } = useAuthStore();
-
-const handleLogin = async () => {
-  console.log('🟢 handleLogin вызван с email:', email);
-  if (!email || !password) {
-    RNAlert.alert('Ошибка', 'Заполните все поля');
-    return;
-  }
-  console.log('➡️ Вызов login из store...');
-  const success = await login(email, password);
-  console.log('🔁 Результат login:', success ? 'успех' : 'неудача');
-  if (success) {
-    console.log('🎉 Успешный вход, навигация должна переключиться');
-    // Навигация переключится автоматически, если token обновился в store
-  }
-};
+  const [showPassword, setShowPassword] = useState(false); // ← добавить
+  const handleLogin = async () => {
+    if (!email || !password) return;
+    await login(email, password);
+  };
 
   return (
-    <VStack flex={1} justifyContent="center" px="$4" space="lg" bg="$white">
-      <Text size="2xl" bold textAlign="center">Вход</Text>
+    <Center flex={1} bg="white" width="100%" height="100%">
+      <VStack
+        width={382}
+        px="$5"
+        py="$4"
+        space="sm"
+      >
+        {/* Логотип */}
+        <Image
+          source={require('../../assets/startlogo.png')}
+          style={{
+            width: 60,
+            height: 60,
+            alignSelf: 'center',
+            marginBottom: 16,
+          }}
+        />
 
-      <FormControl>
-        <FormControlLabel>
-          <FormControlLabelText>Email</FormControlLabelText>
-        </FormControlLabel>
-        <Input>
-          <InputField
-            placeholder="Введите email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </Input>
-      </FormControl>
+        <Text size="2xl" bold textAlign="center">
+          Добро пожаловать
+        </Text>
+        <Text fontSize="$sm" color="$textLight500" textAlign="center" mb="$2">
+          Пожалуйста, введите ваш логин и пароль для входа в систему
+        </Text>
 
-      <FormControl>
-        <FormControlLabel>
-          <FormControlLabelText>Пароль</FormControlLabelText>
-        </FormControlLabel>
-        <Input>
-          <InputField
-            placeholder="Введите пароль"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-        </Input>
-      </FormControl>
+        <FormControl>
+          <FormControlLabel>
+            <FormControlLabelText>Почта</FormControlLabelText>
+          </FormControlLabel>
+          <Input>
+            <InputField
+              placeholder="example@example.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </Input>
+        </FormControl>
 
-      {error && (
-        <Alert action="error">
-          <AlertText>{error}</AlertText>
-        </Alert>
-      )}
+        <FormControl>
+          <FormControlLabel>
+            <FormControlLabelText>Пароль</FormControlLabelText>
+          </FormControlLabel>
+          <Input>
+            <InputField
+              placeholder="********"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword} // ← изменить
+            />
+            <InputSlot onPress={() => setShowPassword(!showPassword)}>
+              <Icon
+                name={showPassword ? 'visibility' : 'visibility-off'}
+                size={20}
+                color="#666"
+              />
+            </InputSlot>
+          </Input>
+        </FormControl>
+        
+        {/* Ссылка "Забыли пароль?" – прижата вправо */}
+        <HStack width="100%" justifyContent="flex-end" mt="$1">
+          <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+            <Text color="$black" fontSize="$md" fontWeight="$bold">Забыли пароль?</Text>
+          </TouchableOpacity>
+        </HStack>
 
-      {isLoading ? (
-        <Spinner size="large" />
-      ) : (
-        <Button onPress={handleLogin}>
-          <ButtonText>Войти</ButtonText>
+        {/* Кнопка входа */}
+        <Button
+          onPress={handleLogin}
+          isDisabled={isLoading}
+          style={{
+            backgroundColor: '#000000',
+            paddingHorizontal: 20,
+          }}
+          rounded="$full"
+          height={48}
+          width="100%"
+        >
+          <ButtonText fontSize="$md" color="$white">
+            {isLoading ? 'Вход...' : 'Войти'}
+          </ButtonText>
         </Button>
-      )}
 
-      <Button variant="link" onPress={() => navigation.navigate('Register')}>
-        <ButtonText>Нет аккаунта? Зарегистрироваться</ButtonText>
-      </Button>
-    </VStack>
+        {/* Строка "Нет аккаунта? Зарегистрироваться" */}
+        <HStack width="100%" justifyContent="center" space="sm" mt="$2">
+          <Text color="$textLight500" fontSize="$md">Нет аккаунта?</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <Text color="$black" fontSize="$md" fontWeight="$bold">
+              Зарегистрироваться
+            </Text>
+          </TouchableOpacity>
+        </HStack>
+
+        {error && (
+          <Text color="$red500" textAlign="center" fontSize="$sm">
+            {error}
+          </Text>
+        )}
+      </VStack>
+    </Center>
   );
 }

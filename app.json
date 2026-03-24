@@ -2,6 +2,7 @@
   "expo": {
     "name": "SmartFridge",
     "slug": "SmartFridge",
+    "scheme": "SmartFridge",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -24,6 +25,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f0a2063b-89d5-4520-88b1-9b58f8bc3f64"
+      }
     }
   }
 }
