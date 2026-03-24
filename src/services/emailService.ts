@@ -1,24 +1,13 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-// Настройка транспорта для отправки писем
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,       // SMTP-сервер (например, smtp.mail.ru)
-  port: Number(process.env.SMTP_PORT), // порт (465 для SSL, 587 для STARTTLS)
-  secure: process.env.SMTP_SECURE === 'true', // true для порта 465
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+if (!process.env.RESEND_API_KEY) {
+  throw new Error('RESEND_API_KEY не задан');
+}
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-/**
- * Отправляет письмо со ссылкой для сброса пароля
- * @param to - email получателя
- * @param resetLink - полная ссылка для сброса пароля (формируется в контроллере)
- */
 export const sendResetEmail = async (to: string, resetLink: string) => {
-  const mailOptions = {
-    from: process.env.SMTP_FROM,
+  const { error } = await resend.emails.send({
+    from: process.env.RESEND_FROM_EMAIL || 'SmartFridge <noreply@smartfridge.ru>',
     to,
     subject: 'Сброс пароля в SmartFridge',
     html: `
@@ -28,7 +17,10 @@ export const sendResetEmail = async (to: string, resetLink: string) => {
       <p>Ссылка действительна в течение 1 часа.</p>
       <p>Если вы не запрашивали сброс, просто проигнорируйте это письмо.</p>
     `,
-  };
-  await transporter.sendMail(mailOptions);
-  console.log(`Reset email sent to ${to} via ${process.env.SMTP_HOST}`);
+  });
+  if (error) {
+    console.error('Resend error:', error);
+    throw new Error('Не удалось отправить письмо');
+  }
+  console.log(`Reset email sent to ${to} via Resend`);
 };
