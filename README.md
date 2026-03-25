@@ -28,4 +28,4 @@
    2. если используете Android-эмуляторе: npx expo run:android (если возникает ошибка, перед этой командой используйте: echo "sdk.dir=C:/Users/ИМЯ_ПОЛЬЗОВАТЕЛЯ/AppData/Local/Android/Sdk" > android/local.properties) 
 
 ## Ссылки 
-- [Макет в Figma](https://figma.com)"ещё не готово"
+- [Макет в Figma](https://www.figma.com/design/TWKHY0VRF0p6aSaJPgIigM/%D0%B4%D0%B8%D0%B7%D0%B0%D0%B9%D0%BD%D0%B8?node-id=0-1&t=SXsdiuiUKbgyqHsi-1)
