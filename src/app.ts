@@ -39,6 +39,9 @@ if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: path.join(__dirname, '../.env') });
 }
 const specs = swaggerJsdoc(swaggerOptions);
+
+
+
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
@@ -46,6 +49,11 @@ const PORT = Number(process.env.PORT) || 5000;
 app.use(express.json());
 app.use(cors());
 app.use(morgan('dev'));
+
+app.get('/api-docs.json', (req, res) => {
+  res.json(specs);
+});
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Маршрут для перенаправления на глубокую ссылку
