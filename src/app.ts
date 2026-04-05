@@ -7,12 +7,38 @@ import connectDB from './config/database';
 import productRoutes from './routes/productRoutes';
 import authRoutes from './routes/authRoutes';
 import commonProductRoutes from './routes/commonProductRoutes';
+import swaggerJsdoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
+
+
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'SmartFridge API',
+      version: '1.0.0',
+      description: 'API для управления продуктами и сброса пароля',
+    },
+    servers: [{ url: 'https://smartfridge-ouxh.onrender.com' }],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+  },
+  apis: ['./src/controllers/*.ts', './dist/controllers/*.js'],
+};
+
 
 // Загружаем .env только в режиме разработки
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: path.join(__dirname, '../.env') });
 }
-
+const specs = swaggerJsdoc(swaggerOptions);
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
@@ -20,6 +46,7 @@ const PORT = Number(process.env.PORT) || 5000;
 app.use(express.json());
 app.use(cors());
 app.use(morgan('dev'));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Маршрут для перенаправления на глубокую ссылку
 app.get('/reset-password', (req, res) => {

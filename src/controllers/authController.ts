@@ -3,6 +3,31 @@ import bcrypt from 'bcrypt';
 import User from '../models/User';
 import jwt from 'jsonwebtoken';
 
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Регистрация нового пользователя
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Пользователь создан
+ *       400:
+ *         description: Неверные данные
+ */
+
 export const register = async (req: Request, res: Response) => {
   try {
     const { email, password, name } = req.body;
@@ -35,6 +60,29 @@ export const register = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Ошибка сервера', error: errorMessage });
   }
 };
+
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Вход пользователя
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Успешный вход, возвращает токен и данные пользователя
+ *       401:
+ *         description: Неверные учётные данные
+ */
 
 export const login = async (req: Request, res: Response) => {
   try {
