@@ -228,16 +228,31 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
  */
 
 export const getProductById = async (req: AuthRequest, res: Response) => {
-    try {
-    const product = await Product.findOne({ 
-      _id: req.params.id, 
-      userId: req.user.userId  // проверяем, что продукт принадлежит пользователю
-    });
+  try {
+    const userId = req.user.userId;
+    const product = await Product.findById(req.params.id);
+    
     if (!product) {
       return res.status(404).json({ message: 'Продукт не найден' });
     }
+    
+    // Проверка прав
+    if (product.ownerType === 'personal') {
+      if (product.ownerId.toString() !== userId) {
+        return res.status(403).json({ message: 'Нет доступа' });
+      }
+    } else if (product.ownerType === 'family') {
+      const family = await Family.findOne({ _id: product.ownerId, 'members.userId': userId });
+      if (!family) {
+        return res.status(403).json({ message: 'Вы не состоите в этой семье' });
+      }
+    } else {
+      return res.status(400).json({ message: 'Неверный тип владельца' });
+    }
+    
     res.json(product);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Ошибка сервера' });
   }
 };
@@ -276,22 +291,51 @@ export const getProductById = async (req: AuthRequest, res: Response) => {
  *         description: Продукт не найден
  */
 
+// Обновить продукт
 export const updateProduct = async (req: AuthRequest, res: Response) => {
   try {
-    const product = await Product.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.userId }, // проверка владельца
-      req.body,
-      { new: true }
-    );
+    const userId = req.user.userId;
+    const product = await Product.findById(req.params.id);
+    
     if (!product) {
       return res.status(404).json({ message: 'Продукт не найден' });
     }
-    res.json(product);
+    
+    // Проверка прав
+    if (product.ownerType === 'personal') {
+      if (product.ownerId.toString() !== userId) {
+        return res.status(403).json({ message: 'Нет прав на редактирование' });
+      }
+    } else if (product.ownerType === 'family') {
+      const family = await Family.findOne({ _id: product.ownerId, 'members.userId': userId });
+      if (!family) {
+        return res.status(403).json({ message: 'Вы не состоите в этой семье' });
+      }
+    } else {
+      return res.status(400).json({ message: 'Неверный тип владельца' });
+    }
+    
+    // Обновляем только разрешённые поля
+    const allowedUpdates = ['name', 'quantity', 'unit', 'expiryDate', 'category', 'price'];
+    const updates: any = {};
+    for (const key of allowedUpdates) {
+      if (req.body[key] !== undefined) {
+        updates[key] = req.body[key];
+      }
+    }
+    
+    const updatedProduct = await Product.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true }
+    );
+    
+    res.json(updatedProduct);
   } catch (error) {
+    console.error(error);
     res.status(400).json({ message: 'Ошибка при обновлении' });
   }
 };
-
 // Удалить продукт
 
 /**
@@ -314,15 +358,31 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
 
 export const deleteProduct = async (req: AuthRequest, res: Response) => {
   try {
-    const product = await Product.findOneAndDelete({ 
-      _id: req.params.id, 
-      userId: req.user.userId 
-    });
+    const userId = req.user.userId;
+    const product = await Product.findById(req.params.id);
+    
     if (!product) {
       return res.status(404).json({ message: 'Продукт не найден' });
     }
+    
+    // Проверка прав
+    if (product.ownerType === 'personal') {
+      if (product.ownerId.toString() !== userId) {
+        return res.status(403).json({ message: 'Нет прав на удаление' });
+      }
+    } else if (product.ownerType === 'family') {
+      const family = await Family.findOne({ _id: product.ownerId, 'members.userId': userId });
+      if (!family) {
+        return res.status(403).json({ message: 'Вы не состоите в этой семье' });
+      }
+    } else {
+      return res.status(400).json({ message: 'Неверный тип владельца' });
+    }
+    
+    await Product.findByIdAndDelete(req.params.id);
     res.json({ message: 'Продукт удалён' });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Ошибка сервера' });
   }
 };
