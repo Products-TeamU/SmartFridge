@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import User from '../models/User';
 import jwt from 'jsonwebtoken';
-
+import { AuthRequest } from '../middleware/authMiddleware'; 
 /**
  * @swagger
  * /api/auth/register:
@@ -82,7 +82,7 @@ export const register = async (req: Request, res: Response) => {
  *         description: Успешный вход, возвращает токен и данные пользователя
  *       401:
  *         description: Неверные учётные данные
- */
+ */ 
 
 export const login = async (req: Request, res: Response) => {
   try {
@@ -115,5 +115,42 @@ export const login = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Ошибка сервера' });
+  }
+};
+
+
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId; // или req.user?.id – зависит от вашего authMiddleware
+    const { name, email } = req.body;
+
+    if (!name && !email) {
+      return res.status(400).json({ message: 'Укажите хотя бы одно поле для обновления (name или email)' });
+    }
+
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+
+    // Если обновляется email – проверяем уникальность
+    if (email) {
+      const existingUser = await User.findOne({ email, _id: { $ne: userId } });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email уже используется другим пользователем' });
+      }
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-passwordHash');
+
+    res.json(updatedUser);
+  } catch (error) {
+    console.error(error);
+    // Исправление ошибки 'error is of type unknown'
+    const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+    res.status(500).json({ message: 'Ошибка обновления профиля', error: errorMessage });
   }
 };
