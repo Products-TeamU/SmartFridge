@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import Family from '../models/Family';
 import crypto from 'crypto';
 import { AuthRequest } from '../middleware/authMiddleware';
-
+import Product from '../models/Products';
 // Генерация уникального кода (6 символов)
 const generateInviteCode = () => crypto.randomBytes(3).toString('hex');
 
@@ -118,6 +118,63 @@ export const removeMember = async (req: AuthRequest, res: Response) => {
     await family.save();
 
     res.json({ message: 'Участник удалён' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+};
+
+// Обновить название семьи
+export const updateFamilyName = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user.userId;
+    const { name } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: 'Название не может быть пустым' });
+    }
+
+    const family = await Family.findOne({ 'members.userId': userId });
+    if (!family) {
+      return res.status(404).json({ message: 'Семья не найдена' });
+    }
+
+    const member = family.members.find(m => m.userId.toString() === userId);
+    if (member?.role !== 'admin') {
+      return res.status(403).json({ message: 'Только администратор может изменять название' });
+    }
+
+    family.name = name.trim();
+    await family.save();
+
+    res.json({ message: 'Название обновлено', family });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Ошибка сервера' });
+  }
+};
+
+// Удалить семью (только админ, удаляет все семейные продукты)
+export const deleteFamily = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user.userId;
+
+    const family = await Family.findOne({ 'members.userId': userId });
+    if (!family) {
+      return res.status(404).json({ message: 'Семья не найдена' });
+    }
+
+    const member = family.members.find(m => m.userId.toString() === userId);
+    if (member?.role !== 'admin') {
+      return res.status(403).json({ message: 'Только администратор может удалить семью' });
+    }
+
+    // Удаляем все продукты, принадлежащие этой семье
+    await Product.deleteMany({ ownerType: 'family', ownerId: family._id });
+    // Удаляем саму семью
+    await Family.findByIdAndDelete(family._id);
+
+    res.json({ message: 'Семья и все семейные продукты удалены' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Ошибка сервера' });
