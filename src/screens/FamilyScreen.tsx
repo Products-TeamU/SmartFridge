@@ -19,14 +19,31 @@ import {
 import { useFamilyStore } from '../store/familyStore';
 import { useAuthStore } from '../store/authStore';
 import { Clipboard, Alert as RNAlert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function FamilyScreen() {
-  const { family, isLoading, error, fetchFamily, createFamily, joinFamily, removeMember } = useFamilyStore();
+  const { 
+    family, 
+    isLoading, 
+    error, 
+    fetchFamily, 
+    createFamily, 
+    joinFamily, 
+    removeMember,
+    updateFamilyName,
+    leaveFamily,
+    deleteFamily
+  } = useFamilyStore();
+  
   const { user } = useAuthStore();
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const [familyName, setFamilyName] = useState('');
   const [inviteCode, setInviteCode] = useState('');
+  
+  // Модалка изменения названия
+  const [showEditName, setShowEditName] = useState(false);
+  const [editNameValue, setEditNameValue] = useState('');
 
   useEffect(() => {
     fetchFamily();
@@ -52,6 +69,65 @@ export default function FamilyScreen() {
     } else {
       RNAlert.alert('Ошибка', error || 'Неверный код');
     }
+  };
+
+  const handleUpdateFamilyName = async () => {
+    if (!editNameValue.trim()) {
+      RNAlert.alert('Ошибка', 'Название не может быть пустым');
+      return;
+    }
+    const success = await updateFamilyName(editNameValue.trim());
+    if (success) {
+      setShowEditName(false);
+      setEditNameValue('');
+      RNAlert.alert('Успех', 'Название семьи изменено');
+    } else {
+      RNAlert.alert('Ошибка', error || 'Не удалось изменить название');
+    }
+  };
+
+  const handleDeleteFamily = () => {
+    RNAlert.alert(
+      'Удалить семью',
+      'Вы уверены? Все семейные продукты будут удалены безвозвратно. Это действие нельзя отменить.',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        { 
+          text: 'Удалить', 
+          style: 'destructive', 
+          onPress: async () => {
+            const success = await deleteFamily();
+            if (success) {
+              RNAlert.alert('Семья удалена');
+            } else {
+              RNAlert.alert('Ошибка', error || 'Не удалось удалить семью');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleLeaveFamily = () => {
+    RNAlert.alert(
+      'Покинуть семью',
+      'Вы уверены? Вы потеряете доступ к семейным продуктам.',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        { 
+          text: 'Покинуть', 
+          style: 'destructive', 
+          onPress: async () => {
+            const success = await leaveFamily();
+            if (success) {
+              RNAlert.alert('Вы покинули семью');
+            } else {
+              RNAlert.alert('Ошибка', error || 'Не удалось покинуть семью');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const copyInviteCode = () => {
@@ -83,7 +159,8 @@ export default function FamilyScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1 }} bg="white">
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
       <VStack space="lg" p="$5">
         <Heading size="xl" textAlign="center">Семья</Heading>
 
@@ -94,18 +171,17 @@ export default function FamilyScreen() {
         )}
 
         {!family ? (
-          // Нет семьи
-          <VStack space="md">
+          <VStack space="md" flex={1} justifyContent="center" alignItems="center">
             <Text textAlign="center">Вы ещё не состоите в семье. Создайте свою или присоединитесь по коду.</Text>
-            <Button onPress={() => setShowCreate(true)} bg="$black" rounded="$full">
+            <Button onPress={() => setShowCreate(true)} bg="$black" rounded="$full" width="80%">
               <ButtonText color="$white">Создать семью</ButtonText>
             </Button>
-            <Button onPress={() => setShowJoin(true)} variant="outline" rounded="$full">
+            <Button onPress={() => setShowJoin(true)} variant="outline" rounded="$full" width="80%">
               <ButtonText>Присоединиться по коду</ButtonText>
             </Button>
           </VStack>
         ) : (
-          // Есть семья
+          // ---------- Есть семья ----------
           <VStack space="md">
             <Box bg="$gray100" p="$4" borderRadius="$lg">
               <Text bold size="lg">{family.name}</Text>
@@ -135,40 +211,44 @@ export default function FamilyScreen() {
               </Box>
             ))}
 
+            {/* Кнопки для администратора */}
             {isAdmin && (
-              <Button variant="outline" onPress={() => setShowCreate(true)} mt="$2">
-                <ButtonText>Изменить название семьи</ButtonText>
-              </Button>
+              <>
+                <Button variant="outline" onPress={() => {
+                  setEditNameValue(family.name);
+                  setShowEditName(true);
+                }} mt="$2">
+                  <ButtonText>Изменить название семьи</ButtonText>
+                </Button>
+                
+                <Button bg="$red500" onPress={handleDeleteFamily} mt="$2">
+                  <ButtonText color="$white">Удалить семью</ButtonText>
+                </Button>
+              </>
             )}
 
-            <Button variant="link" onPress={() => {
-              RNAlert.alert(
-                'Покинуть семью',
-                'Вы уверены? Вы потеряете доступ к семейным продуктам.',
-                [
-                  { text: 'Отмена', style: 'cancel' },
-                  { text: 'Покинуть', style: 'destructive', onPress: async () => {
-                    // Используем leaveFamily (нужно реализовать в store)
-                    // Временно: удаляем себя через removeMember
-                    const success = await removeMember(user!.id);
-                    if (success) RNAlert.alert('Вы покинули семью');
-                  } }
-                ]
-              );
-            }}>
-              <ButtonText color="$red500">Покинуть семью</ButtonText>
-            </Button>
+            {/* Кнопка для обычного участника */}
+            {!isAdmin && (
+              <Button variant="link" onPress={handleLeaveFamily}>
+                <ButtonText color="$red500">Покинуть семью</ButtonText>
+              </Button>
+            )}
           </VStack>
         )}
 
-        {/* Модальное окно создания семьи */}
+        {/* ---------- Модалка создания семьи ---------- */}
         {showCreate && (
-          <Box bg="white" p="$5" borderRadius="$lg" borderWidth={1} borderColor="$gray300" mt="$3">
-            <Heading size="md" mb="$2">Создать семью</Heading>
-            <Input mb="$3">
-              <InputField placeholder="Название семьи (необязательно)" value={familyName} onChangeText={setFamilyName} />
+          <Box bg="white" p="$5" borderRadius="$lg" borderWidth={1} borderColor="$gray300" mt="$3" alignItems='center'>
+            <Heading size="md" mb="$2" textAlign='center'>Создать семью</Heading>
+            <Input mb="$3" >
+              <InputField 
+                placeholder="Название семьи (необязательно)" 
+                value={familyName} 
+                onChangeText={setFamilyName}
+                textAlign="center"
+              />
             </Input>
-            <HStack space="md">
+            <HStack space="md" justifyContent='center'>
               <Button flex={1} onPress={() => { setShowCreate(false); setFamilyName(''); }} variant="outline">
                 <ButtonText>Отмена</ButtonText>
               </Button>
@@ -179,12 +259,17 @@ export default function FamilyScreen() {
           </Box>
         )}
 
-        {/* Модальное окно присоединения */}
+        {/* ---------- Модалка присоединения ---------- */}
         {showJoin && (
           <Box bg="white" p="$5" borderRadius="$lg" borderWidth={1} borderColor="$gray300" mt="$3">
             <Heading size="md" mb="$2">Присоединиться к семье</Heading>
             <Input mb="$3">
-              <InputField placeholder="Введите код приглашения" value={inviteCode} onChangeText={setInviteCode} autoCapitalize="none" />
+              <InputField 
+                placeholder="Введите код приглашения" 
+                value={inviteCode} 
+                onChangeText={setInviteCode} 
+                autoCapitalize="none" 
+              />
             </Input>
             <HStack space="md">
               <Button flex={1} onPress={() => { setShowJoin(false); setInviteCode(''); }} variant="outline">
@@ -196,7 +281,30 @@ export default function FamilyScreen() {
             </HStack>
           </Box>
         )}
+
+        {/* ---------- Модалка изменения названия ---------- */}
+        {showEditName && (
+          <Box bg="white" p="$5" borderRadius="$lg" borderWidth={1} borderColor="$gray300" mt="$3">
+            <Heading size="md" mb="$2">Изменить название семьи</Heading>
+            <Input mb="$3">
+              <InputField 
+                placeholder="Новое название" 
+                value={editNameValue} 
+                onChangeText={setEditNameValue} 
+              />
+            </Input>
+            <HStack space="md">
+              <Button flex={1} onPress={() => { setShowEditName(false); setEditNameValue(''); }} variant="outline">
+                <ButtonText>Отмена</ButtonText>
+              </Button>
+              <Button flex={1} onPress={handleUpdateFamilyName} bg="$black">
+                <ButtonText>Сохранить</ButtonText>
+              </Button>
+            </HStack>
+          </Box>
+        )}
       </VStack>
-    </ScrollView>
+        </ScrollView>
+    </SafeAreaView>
   );
 }
