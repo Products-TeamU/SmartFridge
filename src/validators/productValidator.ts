@@ -20,4 +20,11 @@ export const productSchema = Joi.object({
   price: Joi.number().positive().optional().messages({
     'number.positive': 'Цена должна быть положительным числом',
   }),
+  ownerType: Joi.string().valid('personal', 'family').required().messages({
+    'any.required': 'Тип владельца обязателен',
+    'any.only': 'Тип владельца должен быть personal или family',
+  }),
+  ownerId: Joi.string().required().messages({
+    'any.required': 'ID владельца обязателен',
+  }),
 });

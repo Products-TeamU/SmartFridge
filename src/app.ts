@@ -6,6 +6,7 @@ import path from 'path';
 import connectDB from './config/database';
 import productRoutes from './routes/productRoutes';
 import authRoutes from './routes/authRoutes';
+import familyRoutes from './routes/familyRoutes';
 import commonProductRoutes from './routes/commonProductRoutes';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
@@ -28,11 +29,27 @@ const swaggerOptions = {
           bearerFormat: 'JWT',
         },
       },
+      schemas: {                     // <-- добавляем раздел schemas
+        Product: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            name: { type: 'string' },
+            quantity: { type: 'number' },
+            unit: { type: 'string' },
+            expiryDate: { type: 'string', format: 'date' },
+            category: { type: 'string' },
+            price: { type: 'number' },
+            createdAt: { type: 'string', format: 'date-time' },
+            ownerType: { type: 'string', enum: ['personal', 'family'] },
+            ownerId: { type: 'string' },
+          },
+        },
+      },
     },
   },
   apis: ['./src/controllers/*.ts', './dist/controllers/*.js'],
 };
-
 
 // Загружаем .env только в режиме разработки
 if (process.env.NODE_ENV !== 'production') {
@@ -48,6 +65,7 @@ const PORT = Number(process.env.PORT) || 5000;
 // Middleware
 app.use(express.json());
 app.use(cors());
+app.use('/api/family', familyRoutes);
 app.use(morgan('dev'));
 
 app.get('/api-docs.json', (req, res) => {
