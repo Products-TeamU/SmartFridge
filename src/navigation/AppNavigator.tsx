@@ -5,7 +5,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import * as Linking from 'expo-linking';
 import { useAuthStore } from '../store/authStore';
 import LoginScreen from '../screens/LoginScreen';
-import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
 import { Spinner } from '@gluestack-ui/themed';
 import AddProductScreen from '../screens/AddProductScreen';
@@ -14,6 +13,10 @@ import EditProductScreen from '../screens/EditProductScreen';
 import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import { navigationRef } from './RootNavigation';
+import RegisterStep1Screen from '../screens/RegisterStep1Screen';
+import RegisterStep2Screen from '../screens/RegisterStep2Screen';
+import MainTabs from './MainTabs';
+import ChooseProductTypeScreen from '../screens/ChooseProductTypeScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -36,20 +39,14 @@ function AuthStack() {
   return (
     <Stack.Navigator id="AuthStack" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="RegisterStep1" component={RegisterStep1Screen} />
+      <Stack.Screen name="RegisterStep2" component={RegisterStep2Screen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
     </Stack.Navigator>
   );
 }
 
-function MainTabs() {
-  return (
-    <Tab.Navigator id="MainTabs">
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Главная' }} />
-    </Tab.Navigator>
-  );
-}
 
 function AppStack() {
   return (
@@ -74,6 +71,11 @@ function AppStack() {
         name="ResetPassword"
         component={ResetPasswordScreen}
         options={{ headerShown: true, title: 'Сброс пароля' }}
+      />
+      <Stack.Screen
+        name="ChooseProductType"
+        component={ChooseProductTypeScreen}
+        options={{ headerShown: true, title: 'Выбор типа' }}
       />
     </Stack.Navigator>
   );

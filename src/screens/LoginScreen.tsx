@@ -116,7 +116,7 @@ export default function LoginScreen({ navigation }: any) {
         {/* Строка "Нет аккаунта? Зарегистрироваться" */}
         <HStack width="100%" justifyContent="center" space="sm" mt="$2">
           <Text color="$textLight500" fontSize="$md">Нет аккаунта?</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+          <TouchableOpacity onPress={() => navigation.navigate('RegisterStep1')}>
             <Text color="$black" fontSize="$md" fontWeight="$bold">
               Зарегистрироваться
             </Text>

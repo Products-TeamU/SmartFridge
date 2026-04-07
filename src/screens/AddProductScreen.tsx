@@ -30,14 +30,20 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useProductStore } from '../store/productStore';
 import { Platform, FlatList, TouchableOpacity } from 'react-native';
-import api from '../services/api'; // ✅ импортируем настроенный axios
+import api from '../services/api';
+import { useAuthStore } from '../store/authStore';
+import { useFamilyStore } from '../store/familyStore';
 
 const UNITS = ['шт', 'кг', 'л', 'г', 'мл', 'уп'];
 
-export default function AddProductScreen({ navigation }: any) {
+export default function AddProductScreen({ route, navigation }: any) {
+  const { ownerType: initialOwnerType } = route.params || {};
   const toast = useToast();
   const { addProduct } = useProductStore();
+  const { user } = useAuthStore();
+  const { family } = useFamilyStore();
 
+  // Состояния для полей формы
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('шт');
@@ -53,6 +59,19 @@ export default function AddProductScreen({ navigation }: any) {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Состояния для типа продукта
+  const [ownerType, setOwnerType] = useState<'personal' | 'family'>(initialOwnerType || 'personal');
+  const [ownerId, setOwnerId] = useState<string | undefined>(undefined);
+
+  // Эффект для обновления ownerId
+  useEffect(() => {
+    if (ownerType === 'personal') {
+      setOwnerId(user?.id);
+    } else {
+      setOwnerId(family?._id);
+    }
+  }, [ownerType, user, family]);
+
   // Debounce для поиска через бэкенд
   useEffect(() => {
     if (name.trim().length < 2) {
@@ -66,13 +85,13 @@ export default function AddProductScreen({ navigation }: any) {
         const response = await api.get(`/common/search?q=${name}`);
         console.log('Ответ от API:', response.data);
         setSuggestions(response.data);
-      } catch (error) {
-              if (error.response) {
-        console.log('Статус ошибки:', error.response.status);
-        console.log('Данные ошибки:', error.response.data);
-      } else {
-        console.log('Ошибка сети или другая:', error.message);
-      }
+      } catch (error: any) {
+        if (error.response) {
+          console.log('Статус ошибки:', error.response.status);
+          console.log('Данные ошибки:', error.response.data);
+        } else {
+          console.log('Ошибка сети или другая:', error.message);
+        }
         console.error('Ошибка при поиске:', error);
       } finally {
         setLoading(false);
@@ -82,12 +101,11 @@ export default function AddProductScreen({ navigation }: any) {
     return () => clearTimeout(timer);
   }, [name]);
 
-  // Выбор подсказки
   const handleSelect = (product: any) => {
     console.log('Выбран продукт:', product);
     setName(product.name);
     if (product.category) setCategory(product.category);
-    setSuggestions([]); // сразу очищаем подсказки
+    setSuggestions([]);
   };
 
   const validate = () => {
@@ -105,6 +123,29 @@ export default function AddProductScreen({ navigation }: any) {
     if (isSubmittingRef.current) return;
     if (!validate()) return;
 
+    if (ownerType === 'personal' && !user?.id) {
+      toast.show({
+        placement: 'top',
+        render: ({ id }) => (
+          <Toast nativeID={id} action="error" variant="solid">
+            <ToastTitle>Ошибка: пользователь не авторизован</ToastTitle>
+          </Toast>
+        ),
+      });
+      return;
+    }
+    if (ownerType === 'family' && !family?._id) {
+      toast.show({
+        placement: 'top',
+        render: ({ id }) => (
+          <Toast nativeID={id} action="error" variant="solid">
+            <ToastTitle>Ошибка: вы не состоите в семье</ToastTitle>
+          </Toast>
+        ),
+      });
+      return;
+    }
+
     isSubmittingRef.current = true;
     setIsSubmitting(true);
 
@@ -116,6 +157,8 @@ export default function AddProductScreen({ navigation }: any) {
         expiryDate: expiryDate.toISOString().split('T')[0],
         category: category.trim() || undefined,
         price: price ? parseFloat(price) : undefined,
+        ownerType,
+        ownerId: ownerType === 'personal' ? user!.id : family!._id,
       });
 
       toast.show({
@@ -152,6 +195,33 @@ export default function AddProductScreen({ navigation }: any) {
 
   return (
     <VStack flex={1} bg="$backgroundLight100" p="$4" space="lg">
+      {/* Переключатель типа продукта (только если пришли не с экрана выбора) */}
+      {!initialOwnerType && family && (
+        <HStack space="md">
+          <Button
+            flex={1}
+            variant={ownerType === 'personal' ? 'solid' : 'outline'}
+            onPress={() => setOwnerType('personal')}
+          >
+            <ButtonText>📦 Личный</ButtonText>
+          </Button>
+          <Button
+            flex={1}
+            variant={ownerType === 'family' ? 'solid' : 'outline'}
+            onPress={() => setOwnerType('family')}
+          >
+            <ButtonText>👨‍👩‍👧‍👦 Семейный</ButtonText>
+          </Button>
+        </HStack>
+      )}
+
+      {/* Индикатор типа */}
+      <Text fontSize="$sm" color="$gray500" textAlign="center">
+        {ownerType === 'family' 
+          ? 'Продукт будет добавлен в общий список семьи' 
+          : 'Продукт будет виден только вам'}
+      </Text>
+
       <FormControl isInvalid={!!errors.name}>
         <FormControlLabel>
           <FormControlLabelText>Название</FormControlLabelText>

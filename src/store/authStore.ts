@@ -21,7 +21,7 @@ interface AuthState {
   resetPassword: (token: string, newPassword: string) => Promise<boolean>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
   isLoading: true,
@@ -31,7 +31,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       await api.post('/auth/register', { email, password, name });
-      return await useAuthStore.getState().login(email, password);
+      // Вместо useAuthStore.getState() используем get()
+      const loginSuccess = await get().login(email, password);
+      return loginSuccess;
     } catch (error: any) {
       const message = error.response?.data?.message || 'Ошибка регистрации';
       set({ error: message, isLoading: false });

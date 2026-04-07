@@ -3,20 +3,13 @@
     "baseUrl": ".",
     "jsx": "react-native",
     "esModuleInterop": true,
+    "ignoreDeprecations": "6.0",
     "paths": {
-      "@/*": [
-        "./*"
-      ],
-      "react-dom": [
-        "react-native-web"
-      ],
-      "tailwind.config": [
-        "./tailwind.config.js"
-      ]
+      "@/*": ["./*"],
+      "react-dom": ["react-native-web"],
+      "tailwind.config": ["./tailwind.config.js"]
     }
   },
-  "exclude": [
-    "node_modules"
-  ],
+  "exclude": ["node_modules"],
   "extends": "expo/tsconfig.base"
 }

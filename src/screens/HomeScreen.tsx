@@ -1,15 +1,17 @@
-import React, { useEffect, useState } from 'react'; // Добавили useState
-import { RefreshControl } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { RefreshControl, Switch, FlatList } from 'react-native';
 import {
     VStack,
     HStack,
     Text,
     Button,
     ButtonText,
-    FlatList,
     Spinner,
     Center,
+    Box,
+    Icon,
 } from '@gluestack-ui/themed';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuthStore } from '../store/authStore';
 import { useProductStore, Product } from '../store/productStore';
 import { ProductCard } from '../components/ProductCard';
@@ -19,7 +21,7 @@ const getProductStatus = (expiryDate: string): 'good' | 'warning' | 'expired' =>
     const today = new Date();
     const expiry = new Date(expiryDate);
     const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
+    
     if (diffDays < 0) return 'expired';
     if (diffDays <= 3) return 'warning';
     return 'good';
@@ -31,6 +33,7 @@ export default function HomeScreen({ navigation }: any) {
 
     // Состояние для выбранного фильтра
     const [selectedFilter, setSelectedFilter] = useState<'all' | 'warning' | 'expired'>('all');
+    const [showFamily, setShowFamily] = useState(false);
 
     // Фильтрация продуктов на основе выбранного фильтра
     const filteredProducts = products.filter((product) => {
@@ -40,17 +43,27 @@ export default function HomeScreen({ navigation }: any) {
     });
 
     useEffect(() => {
-        loadProducts();
-    }, []);
+        loadProducts(showFamily);
+    }, [showFamily]);
 
+    // Явно типизированный renderItem
     const renderItem = ({ item }: { item: Product }) => (
-        <ProductCard
-            name={item.name}
-            quantity={item.quantity}
-            unit={item.unit}
-            expiryDate={item.expiryDate}
-            onPress={() => navigation.navigate('ProductDetail', { id: item._id })}
-        />
+        <Box mb="$2" p="$2">
+            <HStack space="md" alignItems="center">
+                {item.ownerType === 'family' && (
+                    <Icon as={MaterialIcons} name="people" size={20} color="#666" />
+                )}
+                <VStack flex={1}>
+                    <ProductCard
+                        name={item.name}
+                        quantity={item.quantity}
+                        unit={item.unit}
+                        expiryDate={item.expiryDate}
+                        onPress={() => navigation.navigate('ProductDetail', { id: item._id })}
+                    />
+                </VStack>
+            </HStack>
+        </Box>
     );
 
     if (loading && products.length === 0) {
@@ -65,7 +78,7 @@ export default function HomeScreen({ navigation }: any) {
         return (
             <Center flex={1}>
                 <Text color="$red500">Ошибка: {error}</Text>
-                <Button onPress={loadProducts} mt="$4">
+                <Button onPress={() => loadProducts(showFamily)} mt="$4">
                     <ButtonText>Повторить</ButtonText>
                 </Button>
             </Center>
@@ -87,6 +100,12 @@ export default function HomeScreen({ navigation }: any) {
                 <Button size="sm" onPress={logout} bg="$red500">
                     <ButtonText>Выйти</ButtonText>
                 </Button>
+            </HStack>
+
+            {/* Переключатель семейных продуктов */}
+            <HStack p="$4" bg="$white" borderBottomWidth={1} borderBottomColor="$coolGray200" justifyContent="space-between" alignItems="center">
+                <Text bold>Показать семейные продукты</Text>
+                <Switch value={showFamily} onValueChange={setShowFamily} />
             </HStack>
 
             {/* Кнопки фильтров (горизонтальные) */}
@@ -121,11 +140,11 @@ export default function HomeScreen({ navigation }: any) {
             </HStack>
 
             {/* Список продуктов */}
-            <FlatList<Product>
-                data={filteredProducts} // ← используем отфильтрованный массив
+            <FlatList
+                data={filteredProducts}
                 renderItem={renderItem}
                 keyExtractor={(item) => item._id}
-                refreshControl={<RefreshControl refreshing={loading} onRefresh={loadProducts} />}
+                refreshControl={<RefreshControl refreshing={loading} onRefresh={() => loadProducts(showFamily)} />}
                 ListEmptyComponent={
                     <Center flex={1} mt="$10">
                         <Text>Нет продуктов</Text>
@@ -143,7 +162,7 @@ export default function HomeScreen({ navigation }: any) {
                 rounded="$full"
                 size="lg"
                 bg="$blue500"
-                onPress={() => navigation.navigate('AddProduct')}
+                onPress={() => navigation.navigate('ChooseProductType')}
             >
                 <ButtonText fontSize="$2xl">+</ButtonText>
             </Button>
