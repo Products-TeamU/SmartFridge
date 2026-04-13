@@ -35,9 +35,21 @@ import Family from '../models/Family';
  */
 
 
+const getUserId = (req: AuthRequest, res: Response): string | null => {
+  const userId = req.user?.userId;
+
+  if (!userId) {
+    res.status(401).json({ message: 'Пользователь не авторизован' });
+    return null;
+  }
+
+  return userId;
+};
+
 export const getAllProducts = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user.userId;
+    const userId = getUserId(req, res);
+    if (!userId) return;
     const { family } = req.query; // ?family=true
 
     // Базовые фильтры: личные продукты
@@ -145,7 +157,8 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
       ownerType,
       ownerId,
     } = req.body;
-    const userId = req.user.userId;
+    const userId = getUserId(req, res);
+    if (!userId) return;
 
     // Проверка обязательных полей
     if (!ownerType || !ownerId) {
@@ -229,7 +242,8 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
 
 export const getProductById = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user.userId;
+    const userId = getUserId(req, res);
+    if (!userId) return;
     const product = await Product.findById(req.params.id);
     
     if (!product) {
@@ -294,7 +308,8 @@ export const getProductById = async (req: AuthRequest, res: Response) => {
 // Обновить продукт
 export const updateProduct = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user.userId;
+    const userId = getUserId(req, res);
+    if (!userId) return;
     const product = await Product.findById(req.params.id);
     
     if (!product) {
@@ -358,7 +373,8 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
 
 export const deleteProduct = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user.userId;
+    const userId = getUserId(req, res);
+    if (!userId) return;
     const product = await Product.findById(req.params.id);
     
     if (!product) {

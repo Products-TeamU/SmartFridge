@@ -1,20 +1,49 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-export interface AuthRequest extends Request {
-  user?: any;
+interface JwtPayload {
+  userId: string;
+  iat?: number;
+  exp?: number;
 }
 
-export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
+export interface AuthRequest extends Request {
+  user?: JwtPayload;
+}
+
+export const authMiddleware = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  const authHeader = req.header('Authorization');
+  const token =
+    authHeader && authHeader.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : null;
+
   if (!token) {
-    return res.status(401).json({ message: 'Нет токена, авторизация запрещена' });
+    res.status(401).json({
+      message: 'Нет токена, авторизация запрещена',
+    });
+    return;
   }
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+
+    if (!decoded.userId) {
+      res.status(401).json({
+        message: 'Неверный токен: userId отсутствует',
+      });
+      return;
+    }
+
     req.user = decoded;
     next();
   } catch (error) {
-    res.status(401).json({ message: 'Неверный токен' });
+    res.status(401).json({
+      message: 'Неверный токен',
+    });
   }
 };
