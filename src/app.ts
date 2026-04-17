@@ -10,6 +10,7 @@ import familyRoutes from './routes/familyRoutes';
 import commonProductRoutes from './routes/commonProductRoutes';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import ocrRoutes from './routes/ocrRoutes';
 
 
 const swaggerOptions = {
@@ -102,6 +103,7 @@ app.get('/reset-password', (req, res) => {
 app.use('/api/products', productRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/common', commonProductRoutes);
+app.use('/api/ocr', ocrRoutes);
 app.get('/', (req, res) => {
   res.json({ message: 'API is running' });
 });
