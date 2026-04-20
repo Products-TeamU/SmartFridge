@@ -10,9 +10,14 @@ const runTesseract = (
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
     const command = `tesseract "${inputPath}" "${outputBase}" -l rus+eng --oem 3 --psm ${psm}`;
+    console.log('Running command:', command);
 
-    exec(command, (error) => {
+    exec(command, (error, stdout, stderr) => {
+      console.log('Tesseract stdout:', stdout);
+      console.log('Tesseract stderr:', stderr);
+
       if (error) {
+        console.error('Tesseract exec error:', error);
         return reject(error);
       }
 
@@ -34,6 +39,10 @@ export const recognizeReceipt = async (filePath: string): Promise<string> => {
   const processedPath = path.join(dir, `${name}_processed.png`);
   const outputBase = path.join(dir, `${name}_out`);
 
+  console.log('recognizeReceipt filePath:', filePath);
+  console.log('processedPath:', processedPath);
+  console.log('outputBase:', outputBase);
+
   try {
     await sharp(filePath)
       .grayscale()
@@ -43,21 +52,23 @@ export const recognizeReceipt = async (filePath: string): Promise<string> => {
       .threshold(165)
       .toFile(processedPath);
 
+    console.log('Sharp preprocessing done');
+
     const text = await runTesseract(processedPath, outputBase, 6);
+
+    console.log('Tesseract text length:', text.length);
 
     return text;
   } finally {
-    const filesToDelete = [
-      filePath,
-      processedPath,
-      outputBase + '.txt',
-    ];
+    const filesToDelete = [filePath, processedPath, outputBase + '.txt'];
 
     for (const file of filesToDelete) {
       if (fs.existsSync(file)) {
         try {
           fs.unlinkSync(file);
-        } catch {}
+        } catch (err) {
+          console.error('Delete file error:', file, err);
+        }
       }
     }
   }

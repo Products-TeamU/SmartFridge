@@ -8,8 +8,9 @@ export interface IProduct extends Document {
   category?: string;
   price?: number;
   createdAt: Date;
-  ownerType: 'personal' | 'family'; // тип владельца
-  ownerId: mongoose.Types.ObjectId; // ссылка на User (если ownerType='personal') или Family (если ownerType='family')
+  ownerType: 'personal' | 'family';
+  ownerId: mongoose.Types.ObjectId;
+  createdBy?: mongoose.Types.ObjectId | null;
 }
 
 const ProductSchema = new Schema({
@@ -22,10 +23,13 @@ const ProductSchema = new Schema({
   price: { type: Number, min: 0 },
   createdAt: { type: Date, default: Date.now },
   ownerType: { type: String, enum: ['personal', 'family'], required: true },
-  ownerId: { type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'ownerType' }
-  // refPath означает, что ссылка зависит от значения ownerType:
-  // если ownerType='personal' -> ссылается на коллекцию 'User'
-  // если ownerType='family' -> ссылается на коллекцию 'Family'
+  ownerId: { type: mongoose.Schema.Types.ObjectId, required: true },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+    index: true,
+  },
 });
 
 export default mongoose.model<IProduct>('Product', ProductSchema);

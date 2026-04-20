@@ -12,7 +12,7 @@ import {
 } from '../controllers/productController';
 
 import { validate } from '../middleware/validationMiddleware';
-import { productSchema } from '../validators/productValidator';
+import { productSchema, productUpdateSchema } from '../validators/productValidator';
 
 const router = express.Router();
 
@@ -20,12 +20,11 @@ router.get('/search', authMiddleware, searchProducts);
 router.get('/personal', authMiddleware, getPersonalProducts);
 router.get('/family', authMiddleware, getFamilyProducts);
 
-
 router.get('/', authMiddleware, getAllProducts);
 router.post('/', authMiddleware, validate(productSchema), createProduct);
 router.get('/:id', authMiddleware, getProductById);
-router.put('/:id', authMiddleware, validate(productSchema), updateProduct);
-router.patch('/:id', authMiddleware, validate(productSchema), updateProduct);
+router.put('/:id', authMiddleware, validate(productUpdateSchema), updateProduct);
+router.patch('/:id', authMiddleware, validate(productUpdateSchema), updateProduct);
 router.delete('/:id', authMiddleware, deleteProduct);
 
 export default router;

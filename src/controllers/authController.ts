@@ -2,114 +2,75 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import User from '../models/User';
 import jwt from 'jsonwebtoken';
-import { AuthRequest } from '../middleware/authMiddleware'; 
-/**
- * @swagger
- * /api/auth/register:
- *   post:
- *     summary: Регистрация нового пользователя
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *               name:
- *                 type: string
- *     responses:
- *       201:
- *         description: Пользователь создан
- *       400:
- *         description: Неверные данные
- */
+import { AuthRequest } from '../middleware/authMiddleware';
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, avatarId } = req.body;
 
-    // Проверяем, есть ли введённый email уже в базе данных
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: 'Пользователь с таким email уже существует' });
+      return res.status(400).json({
+        message: 'Пользователь с таким email уже существует',
+      });
     }
 
-    // Хэшируем пароль
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // Создаём пользователя
     const newUser = new User({
       email,
       passwordHash,
       name,
+      avatarId: avatarId || 'person-green',
     });
 
-    // Сохраняем пользователя в базу
     await newUser.save();
 
-    // Отвечаем клиенту (не возвращаем пароль)
-    res.status(201).json({ message: 'Пользователь успешно создан', user: { email, name } });
+    res.status(201).json({
+      message: 'Пользователь успешно создан',
+      user: {
+        id: newUser._id,
+        email: newUser.email,
+        name: newUser.name,
+        avatarId: newUser.avatarId,
+      },
+    });
   } catch (error) {
-    console.error("Ошибка регистрации:", error);
-    const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+    console.error('Ошибка регистрации:', error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Неизвестная ошибка';
     res.status(500).json({ message: 'Ошибка сервера', error: errorMessage });
   }
 };
 
-/**
- * @swagger
- * /api/auth/login:
- *   post:
- *     summary: Вход пользователя
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *     responses:
- *       200:
- *         description: Успешный вход, возвращает токен и данные пользователя
- *       401:
- *         description: Неверные учётные данные
- */ 
-
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    // 1. Найти пользователя по email
+
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: 'Неверный email или пароль' });
     }
-    // 2. Сравнить пароль
+
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       return res.status(401).json({ message: 'Неверный email или пароль' });
     }
-    // 3. Сгенерировать JWT
+
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       process.env.JWT_SECRET!,
       { expiresIn: '7d' }
     );
-    // 4. Вернуть токен и данные пользователя (без пароля)
+
     res.json({
       token,
       user: {
         id: user._id,
         email: user.email,
         name: user.name,
+        avatarId: user.avatarId || 'person-green',
       },
     });
   } catch (error) {
@@ -118,39 +79,69 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId; // или req.user?.id – зависит от вашего authMiddleware
-    const { name, email } = req.body;
+    const userId = req.user?.userId;
+    const { name, email, avatarId } = req.body;
 
-    if (!name && !email) {
-      return res.status(400).json({ message: 'Укажите хотя бы одно поле для обновления (name или email)' });
+    console.log('updateProfile req.body:', req.body);
+
+    if (!name && !email && !avatarId) {
+      return res.status(400).json({
+        message: 'Укажите хотя бы одно поле для обновления: name, email или avatarId',
+      });
     }
 
     const updateData: any = {};
     if (name) updateData.name = name;
     if (email) updateData.email = email;
+    if (avatarId) updateData.avatarId = avatarId;
 
-    // Если обновляется email – проверяем уникальность
     if (email) {
-      const existingUser = await User.findOne({ email, _id: { $ne: userId } });
+      const existingUser = await User.findOne({
+        email,
+        _id: { $ne: userId },
+      });
+
       if (existingUser) {
-        return res.status(400).json({ message: 'Email уже используется другим пользователем' });
+        return res.status(400).json({
+          message: 'Email уже используется другим пользователем',
+        });
       }
     }
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       updateData,
-      { new: true, runValidators: true }
+      {
+        returnDocument: 'after',
+        runValidators: true,
+      }
     ).select('-passwordHash');
 
-    res.json(updatedUser);
+    console.log('updatedUser avatarId:', updatedUser?.avatarId);
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'Пользователь не найден' });
+    }
+
+    res.json({
+      message: 'Профиль обновлён',
+      user: {
+        id: updatedUser._id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        avatarId: updatedUser.avatarId || 'person-green',
+      },
+    });
   } catch (error) {
     console.error(error);
-    // Исправление ошибки 'error is of type unknown'
-    const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
-    res.status(500).json({ message: 'Ошибка обновления профиля', error: errorMessage });
+    const errorMessage =
+      error instanceof Error ? error.message : 'Неизвестная ошибка';
+
+    res.status(500).json({
+      message: 'Ошибка обновления профиля',
+      error: errorMessage,
+    });
   }
 };
