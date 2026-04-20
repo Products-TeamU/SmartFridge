@@ -1,8 +1,8 @@
-﻿import React from 'react';
+import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import HomeScreen from '../screens/HomeScreen';
-import AddProductScreen from '../screens/AddProductScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 import FamilyScreen from '../screens/FamilyScreen';
 import ScannerScreen from '../screens/ScannerScreen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -12,7 +12,7 @@ type MainTabParamList = {
   Family: undefined;
   Scanner: undefined;
   Settings: undefined;
-  Add: undefined;
+  Profile: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -43,6 +43,7 @@ export default function MainTabs() {
               ? 'add-circle'
               : 'add-circle-outline';
 
+
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: 'tomato',
@@ -54,7 +55,7 @@ export default function MainTabs() {
       <Tab.Screen name="Family" component={FamilyScreen} options={{ title: 'Семья' }} />
       <Tab.Screen name="Scanner" component={ScannerScreen} options={{ title: 'Сканер' }} />
       <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: 'Настройки' }} />
-      <Tab.Screen name="Add" component={AddProductScreen} options={{ title: 'Добавить' }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Профиль' }} />
     </Tab.Navigator>
   );
 }

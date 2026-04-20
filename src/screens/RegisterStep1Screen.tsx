@@ -65,12 +65,13 @@ export default function RegisterStep1Screen({ navigation }: any) {
         />
 
         <Text size="2xl" bold textAlign="center">
-          Шаг 1. Данные для входа
+
+          Шаг 1. Введите данные учётной записи
+        </Text>
+        <Text fontSize="$sm" color="$textLight500" textAlign="center" mb="$2">
+          Пожалуйста, введите email и придумайте надёжный пароль для входа в систему.
         </Text>
 
-        <Text fontSize="$sm" color="$textLight500" textAlign="center" mb="$2">
-          Укажите email и пароль. Пароль должен содержать минимум 6 символов.
-        </Text>
 
         <FormControl isInvalid={!!emailError}>
           <FormControlLabel>

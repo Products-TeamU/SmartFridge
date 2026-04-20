@@ -3,7 +3,7 @@
     "baseUrl": ".",
     "jsx": "react-native",
     "esModuleInterop": true,
-    "ignoreDeprecations": "6.0",
+    "ignoreDeprecations": "5.0",
     "paths": {
       "@/*": ["./*"],
       "react-dom": ["react-native-web"],

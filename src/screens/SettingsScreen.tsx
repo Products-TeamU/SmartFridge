@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { TouchableOpacity, StyleSheet, Alert as RNAlert, View } from 'react-native';
 import {
   VStack,
