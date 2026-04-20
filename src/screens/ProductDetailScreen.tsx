@@ -167,7 +167,7 @@ export default function ProductDetailScreen({ route, navigation }: any) {
       {/* Тип продукта с иконкой */}
       <HStack space="sm" alignItems="center">
         {product.ownerType === 'family' && (
-          <Icon as={MaterialIcons} name="people" size={20} color="#666" />
+          <MaterialIcons name="people" size={20} color="#666" />
         )}
         <Text fontSize="$sm" color="$coolGray600">
           {product.ownerType === 'family' ? 'Семейный продукт' : 'Личный продукт'}

@@ -7,19 +7,42 @@ import FamilyScreen from '../screens/FamilyScreen';
 import ScannerScreen from '../screens/ScannerScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
-const Tab = createBottomTabNavigator();
+type MainTabParamList = {
+  Home: undefined;
+  Family: undefined;
+  Scanner: undefined;
+  Settings: undefined;
+  Add: undefined;
+};
+
+const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export default function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
-          if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
-          else if (route.name === 'Family') iconName = focused ? 'people' : 'people-outline';
-          else if (route.name === 'Scanner') iconName = focused ? 'camera' : 'camera-outline';
-          else if (route.name === 'Settings') iconName = focused ? 'settings' : 'settings-outline';
-          else if (route.name === 'Add') iconName = focused ? 'add-circle' : 'add-circle-outline';
+          const iconName: React.ComponentProps<typeof Ionicons>['name'] =
+            route.name === 'Home'
+              ? focused
+                ? 'home'
+                : 'home-outline'
+              : route.name === 'Family'
+              ? focused
+                ? 'people'
+                : 'people-outline'
+              : route.name === 'Scanner'
+              ? focused
+                ? 'camera'
+                : 'camera-outline'
+              : route.name === 'Settings'
+              ? focused
+                ? 'settings'
+                : 'settings-outline'
+              : focused
+              ? 'add-circle'
+              : 'add-circle-outline';
+
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: 'tomato',

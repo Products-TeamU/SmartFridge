@@ -1,11 +1,9 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import * as Linking from 'expo-linking';
 import { useAuthStore } from '../store/authStore';
 import LoginScreen from '../screens/LoginScreen';
-import HomeScreen from '../screens/HomeScreen';
 import { Spinner } from '@gluestack-ui/themed';
 import AddProductScreen from '../screens/AddProductScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
@@ -17,16 +15,16 @@ import RegisterStep1Screen from '../screens/RegisterStep1Screen';
 import RegisterStep2Screen from '../screens/RegisterStep2Screen';
 import MainTabs from './MainTabs';
 import ChooseProductTypeScreen from '../screens/ChooseProductTypeScreen';
+import ReceiptEditScreen from '../screens/ReceiptEditScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
 
 const Stack = createStackNavigator();
-const Tab = createBottomTabNavigator();
 
-// Конфигурация deep linking
 const linking: LinkingOptions<ReactNavigation.RootParamList> = {
   prefixes: [
     Linking.createURL('/'),
     'SmartFridge://',
-    'https://smartfridge-ouxh.onrender.com', // ← добавлен префикс для продакшена
+    'https://smartfridge-ouxh.onrender.com',
   ],
   config: {
     screens: {
@@ -47,11 +45,15 @@ function AuthStack() {
   );
 }
 
-
 function AppStack() {
   return (
     <Stack.Navigator id="Appstack" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen
+        name="ReceiptEdit"
+        component={ReceiptEditScreen}
+        options={{ headerShown: true, title: 'Редактирование чека' }}
+      />
       <Stack.Screen
         name="AddProduct"
         component={AddProductScreen}
@@ -77,6 +79,11 @@ function AppStack() {
         component={ChooseProductTypeScreen}
         options={{ headerShown: true, title: 'Выбор типа' }}
       />
+      <Stack.Screen
+        name="EditProfile"
+        component={EditProfileScreen}
+        options={{ headerShown: true, title: 'Профиль' }}
+      />
     </Stack.Navigator>
   );
 }
@@ -90,7 +97,7 @@ export default function AppNavigator() {
 
   useEffect(() => {
     loadStoredToken();
-  }, []);
+  }, [loadStoredToken]);
 
   useEffect(() => {
     if (!token && navigationRef.isReady()) {

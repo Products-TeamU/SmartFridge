@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "SmartFridge",
-    "slug": "SmartFridge",
-    "scheme": "SmartFridge",
+    "slug": "smartfridge",
+    "scheme": "smartfridge",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -21,7 +21,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.SmartFridge"
+      "package": "com.anonymous.smartfridge"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -30,6 +30,10 @@
       "eas": {
         "projectId": "f0a2063b-89d5-4520-88b1-9b58f8bc3f64"
       }
-    }
+    },
+    "plugins": [
+      "expo-font",
+      "@react-native-community/datetimepicker"
+    ]
   }
 }

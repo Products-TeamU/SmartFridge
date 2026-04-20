@@ -16,6 +16,7 @@ import {
 import { Image, TouchableOpacity } from 'react-native';
 import { useAuthStore } from '../store/authStore';
 import Icon from 'react-native-vector-icons/MaterialIcons'; // ← добавить
+import AuthLogo from '../components/AuthLogo';
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
@@ -35,16 +36,25 @@ export default function LoginScreen({ navigation }: any) {
         py="$4"
         space="sm"
       >
-        {/* Логотип */}
-        <Image
-          source={require('../../assets/startlogo.png')}
-          style={{
-            width: 60,
-            height: 60,
-            alignSelf: 'center',
-            marginBottom: 16,
-          }}
-        />
+        {/* Логотип + название */}
+        <HStack
+          alignItems="center"
+          justifyContent="center"
+          space="sm"
+          mb="$6"
+        >
+          <Image
+            source={require('../../assets/startlogo.png')}
+            style={{
+              width: 32,
+              height: 32,
+            }}
+            resizeMode="contain"
+          />
+          <Text fontSize="$xl" fontWeight="$600" color="$black">
+            Fridge Smart
+          </Text>
+        </HStack>
 
         <Text size="2xl" bold textAlign="center">
           Добро пожаловать

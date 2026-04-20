@@ -1,4 +1,6 @@
+import 'react-native-gesture-handler';
 import React, { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { GluestackUIProvider } from '@gluestack-ui/themed';
 import { config } from '@gluestack-ui/config';
 import * as Linking from 'expo-linking';
@@ -28,8 +30,10 @@ export default function App() {
   }, []);
 
   return (
-    <GluestackUIProvider config={config}>
-      <AppNavigator />
-    </GluestackUIProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <GluestackUIProvider config={config}>
+        <AppNavigator />
+      </GluestackUIProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   VStack,
   Center,
@@ -21,12 +21,39 @@ export default function RegisterStep1Screen({ navigation }: any) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  const normalizedEmail = useMemo(() => email.trim().toLowerCase(), [email]);
+
+  const validateEmail = (value: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!value.trim()) return 'Введите email';
+    if (!emailRegex.test(value.trim())) return 'Введите корректный email';
+    return '';
+  };
+
+  const validatePassword = (value: string) => {
+    if (!value.trim()) return 'Введите пароль';
+    if (value.length < 6) return 'Пароль должен содержать минимум 6 символов';
+    return '';
+  };
+
   const handleContinue = () => {
-    if (!email || !password) {
-      alert('Заполните все поля');
+    const nextEmailError = validateEmail(normalizedEmail);
+    const nextPasswordError = validatePassword(password);
+
+    setEmailError(nextEmailError);
+    setPasswordError(nextPasswordError);
+
+    if (nextEmailError || nextPasswordError) {
       return;
     }
-    navigation.navigate('RegisterStep2', { email, password });
+
+    navigation.navigate('RegisterStep2', {
+      email: normalizedEmail,
+      password,
+    });
   };
 
   return (
@@ -36,14 +63,16 @@ export default function RegisterStep1Screen({ navigation }: any) {
           source={require('../../assets/startlogo.png')}
           style={{ width: 80, height: 80, alignSelf: 'center', marginBottom: 16 }}
         />
+
         <Text size="2xl" bold textAlign="center">
-          Шаг 1. Введите данные учётной записи
-        </Text>
-        <Text fontSize="$sm" color="$textLight500" textAlign="center" mb="$2">
-          Пожалуйста, придумайте email и надёжный пароль для входа в систему.
+          Шаг 1. Данные для входа
         </Text>
 
-        <FormControl>
+        <Text fontSize="$sm" color="$textLight500" textAlign="center" mb="$2">
+          Укажите email и пароль. Пароль должен содержать минимум 6 символов.
+        </Text>
+
+        <FormControl isInvalid={!!emailError}>
           <FormControlLabel>
             <FormControlLabelText>Почта</FormControlLabelText>
           </FormControlLabel>
@@ -51,28 +80,48 @@ export default function RegisterStep1Screen({ navigation }: any) {
             <InputField
               placeholder="example@example.com"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (emailError) setEmailError('');
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
             />
           </Input>
+          {!!emailError && (
+            <Text color="$red500" fontSize="$sm" mt="$1">
+              {emailError}
+            </Text>
+          )}
         </FormControl>
 
-        <FormControl>
+        <FormControl isInvalid={!!passwordError}>
           <FormControlLabel>
             <FormControlLabelText>Пароль</FormControlLabelText>
           </FormControlLabel>
           <Input>
             <InputField
-              placeholder="********"
+              placeholder="Минимум 6 символов"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (passwordError) setPasswordError('');
+              }}
               secureTextEntry={!showPassword}
             />
             <InputSlot onPress={() => setShowPassword(!showPassword)}>
-              <Icon name={showPassword ? 'visibility' : 'visibility-off'} size={20} color="#666" />
+              <Icon
+                name={showPassword ? 'visibility' : 'visibility-off'}
+                size={20}
+                color="#666"
+              />
             </InputSlot>
           </Input>
+          {!!passwordError && (
+            <Text color="$red500" fontSize="$sm" mt="$1">
+              {passwordError}
+            </Text>
+          )}
         </FormControl>
 
         <Button

@@ -1,60 +1,141 @@
-﻿import React, { useState } from 'react';
-import { VStack, Center, Input, InputField, Button, ButtonText, Text, Alert, AlertText } from '@gluestack-ui/themed';
+﻿import React from 'react';
+import { TouchableOpacity, StyleSheet, Alert as RNAlert, View } from 'react-native';
+import {
+  VStack,
+  HStack,
+  Text,
+  Center,
+  Box,
+  Button,
+  ButtonText,
+} from '@gluestack-ui/themed';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuthStore } from '../store/authStore';
-import api from '../services/api';
+import { getAvatarById } from '../constants/avatarOptions';
 
 export default function SettingsScreen({ navigation }: any) {
-    const { user, setUser } = useAuthStore();
-    const [newName, setNewName] = useState(user?.name || '');
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
+  const { user, logout } = useAuthStore();
 
-    const handleUpdateName = async () => {
-        if (!newName.trim()) {
-            setError('Имя не может быть пустым');
-            return;
-        }
-        setIsLoading(true);
-        setError('');
-        try {
-            const response = await api.put('/auth/update-profile', { name: newName.trim() });
-            if (response.data.user) {
-                setUser(response.data.user);
-            } else {
-                setUser({ ...user, name: newName.trim() });
-            }
-            alert('Имя успешно обновлено!');
-            navigation.goBack();
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Ошибка при обновлении имени');
-        } finally {
-            setIsLoading(false);
-        }
-    };
+  const avatar = getAvatarById(user?.avatarId);
 
-    return (
-        <Center flex={1} bg="white" p="$4">
-            <VStack space="lg" width="100%" maxWidth={400}>
-                <Text fontSize="$2xl" fontWeight="$bold" textAlign="center">Настройки профиля</Text>
-                <VStack space="sm">
-                    <Text fontWeight="$bold">Ваше имя</Text>
-                    <Input>
-                        <InputField
-                            value={newName}
-                            onChangeText={setNewName}
-                            placeholder="Введите новое имя"
-                        />
-                    </Input>
-                </VStack>
-                {error && (
-                    <Alert action="error">
-                        <AlertText>{error}</AlertText>
-                    </Alert>
-                )}
-                <Button onPress={handleUpdateName} isDisabled={isLoading} bg="$blue500">
-                    <ButtonText>{isLoading ? 'Сохранение...' : 'Сохранить'}</ButtonText>
-                </Button>
+  const settingsItems = [
+    {
+      id: 'profile',
+      title: 'Профиль',
+      subtitle: 'Изменить имя и аватар',
+      icon: 'person-outline',
+      onPress: () => navigation.navigate('EditProfile'),
+    },
+    {
+      id: 'notifications',
+      title: 'Уведомления',
+      subtitle: 'Настройки уведомлений появятся позже',
+      icon: 'notifications-none',
+      onPress: () => RNAlert.alert('Скоро', 'Этот раздел добавим позже'),
+    },
+    {
+      id: 'about',
+      title: 'О приложении',
+      subtitle: 'SmartFridge MVP',
+      icon: 'info-outline',
+      onPress: () =>
+        RNAlert.alert(
+          'О приложении',
+          'SmartFridge — приложение для учёта продуктов и контроля сроков годности.'
+        ),
+    },
+  ];
+
+  return (
+    <Center flex={1} bg="$coolGray50" px="$4">
+      <VStack space="lg" width="100%" maxWidth={440}>
+        <Box bg="$white" borderRadius="$2xl" p="$4">
+          <HStack space="md" alignItems="center">
+            <View
+              style={[
+                styles.avatar,
+                { backgroundColor: avatar.bgColor },
+              ]}
+            >
+              <MaterialIcons
+                name={avatar.iconName}
+                size={28}
+                color={avatar.iconColor}
+              />
+            </View>
+
+            <VStack flex={1}>
+              <Text fontSize="$lg" fontWeight="$bold">
+                {user?.name || 'Пользователь'}
+              </Text>
+              <Text color="$coolGray500">{user?.email || 'Без email'}</Text>
             </VStack>
-        </Center>
-    );
+          </HStack>
+        </Box>
+
+        <Box bg="$white" borderRadius="$2xl" overflow="hidden">
+          {settingsItems.map((item, index) => (
+            <TouchableOpacity
+              key={item.id}
+              onPress={item.onPress}
+              activeOpacity={0.8}
+              style={[
+                styles.row,
+                index !== settingsItems.length - 1 && styles.rowBorder,
+              ]}
+            >
+              <HStack alignItems="center" space="md" flex={1}>
+                <View style={styles.iconWrap}>
+                  <MaterialIcons name={item.icon} size={22} color="#374151" />
+                </View>
+
+                <VStack flex={1}>
+                  <Text fontWeight="$semibold">{item.title}</Text>
+                  <Text fontSize="$sm" color="$coolGray500">
+                    {item.subtitle}
+                  </Text>
+                </VStack>
+              </HStack>
+
+              <MaterialIcons name="chevron-right" size={22} color="#9CA3AF" />
+            </TouchableOpacity>
+          ))}
+        </Box>
+
+        <Button bg="$red500" onPress={logout}>
+          <ButtonText>Выйти</ButtonText>
+        </Button>
+      </VStack>
+    </Center>
+  );
 }
+
+const styles = StyleSheet.create({
+  avatar: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  row: {
+    minHeight: 76,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  rowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  iconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

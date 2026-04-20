@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   VStack,
   HStack,
@@ -7,17 +7,6 @@ import {
   ButtonText,
   Input,
   InputField,
-  Select,
-  SelectTrigger,
-  SelectInput,
-  SelectPortal,
-  SelectBackdrop,
-  SelectContent,
-  SelectDragIndicator,
-  SelectDragIndicatorWrapper,
-  SelectItem,
-  Icon,
-  ChevronDownIcon,
   FormControl,
   FormControlLabel,
   FormControlLabelText,
@@ -25,16 +14,30 @@ import {
   FormControlErrorText,
   Toast,
   ToastTitle,
-  useToast
+  useToast,
+  Box,
 } from '@gluestack-ui/themed';
+import {
+  Platform,
+  FlatList,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useProductStore } from '../store/productStore';
-import { Platform, FlatList, TouchableOpacity } from 'react-native';
 import api from '../services/api';
+import { useProductStore } from '../store/productStore';
 import { useAuthStore } from '../store/authStore';
 import { useFamilyStore } from '../store/familyStore';
 
 const UNITS = ['шт', 'кг', 'л', 'г', 'мл', 'уп'];
+const QUICK_EXPIRY_DAYS = [1, 3, 7, 30];
+
+const addDays = (date: Date, days: number) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+};
 
 export default function AddProductScreen({ route, navigation }: any) {
   const { ownerType: initialOwnerType } = route.params || {};
@@ -43,11 +46,14 @@ export default function AddProductScreen({ route, navigation }: any) {
   const { user } = useAuthStore();
   const { family } = useFamilyStore();
 
-  // Состояния для полей формы
+  const quantityRef = useRef<any>(null);
+  const categoryRef = useRef<any>(null);
+  const priceRef = useRef<any>(null);
+
   const [name, setName] = useState('');
-  const [quantity, setQuantity] = useState('');
+  const [quantity, setQuantity] = useState('1');
   const [unit, setUnit] = useState('шт');
-  const [expiryDate, setExpiryDate] = useState(new Date());
+  const [expiryDate, setExpiryDate] = useState(addDays(new Date(), 7));
   const [category, setCategory] = useState('');
   const [price, setPrice] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -55,15 +61,29 @@ export default function AddProductScreen({ route, navigation }: any) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isSubmittingRef = useRef(false);
 
-  // Состояния для подсказок
   const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
-  // Состояния для типа продукта
-  const [ownerType, setOwnerType] = useState<'personal' | 'family'>(initialOwnerType || 'personal');
+  const [ownerType, setOwnerType] = useState<'personal' | 'family'>(
+    initialOwnerType || 'personal'
+  );
   const [ownerId, setOwnerId] = useState<string | undefined>(undefined);
 
-  // Эффект для обновления ownerId
+  useEffect(() => {
+    const prefill = route.params?.prefill;
+
+    if (!prefill) return;
+
+    if (prefill.name) setName(prefill.name);
+    if (prefill.quantity !== null && prefill.quantity !== undefined) {
+      setQuantity(String(prefill.quantity));
+    }
+    if (prefill.unit) setUnit(prefill.unit);
+    if (prefill.price !== null && prefill.price !== undefined) {
+      setPrice(String(prefill.price));
+    }
+  }, [route.params]);
+
   useEffect(() => {
     if (ownerType === 'personal') {
       setOwnerId(user?.id);
@@ -72,7 +92,6 @@ export default function AddProductScreen({ route, navigation }: any) {
     }
   }, [ownerType, user, family]);
 
-  // Debounce для поиска через бэкенд
   useEffect(() => {
     if (name.trim().length < 2) {
       setSuggestions([]);
@@ -80,46 +99,75 @@ export default function AddProductScreen({ route, navigation }: any) {
     }
 
     const timer = setTimeout(async () => {
-      setLoading(true);
+      setLoadingSuggestions(true);
       try {
         const response = await api.get(`/common/search?q=${name}`);
-        console.log('Ответ от API:', response.data);
         setSuggestions(response.data);
       } catch (error: any) {
-        if (error.response) {
-          console.log('Статус ошибки:', error.response.status);
-          console.log('Данные ошибки:', error.response.data);
-        } else {
-          console.log('Ошибка сети или другая:', error.message);
-        }
-        console.error('Ошибка при поиске:', error);
+        console.error('Ошибка при поиске:', error?.response?.data || error?.message);
       } finally {
-        setLoading(false);
+        setLoadingSuggestions(false);
       }
-    }, 300);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [name]);
 
-  const handleSelect = (product: any) => {
-    console.log('Выбран продукт:', product);
+  const handleSelectSuggestion = (product: any) => {
     setName(product.name);
     if (product.category) setCategory(product.category);
     setSuggestions([]);
+    setTimeout(() => quantityRef.current?.focus?.(), 50);
+  };
+
+  const changeQuantity = (delta: number) => {
+    const current = Number(quantity || '0');
+    const safeCurrent = Number.isNaN(current) ? 1 : current;
+    const next = Math.max(1, safeCurrent + delta);
+    setQuantity(String(next));
+
+    if (errors.quantity) {
+      setErrors((prev) => ({ ...prev, quantity: '' }));
+    }
+  };
+
+  const setQuickExpiry = (days: number) => {
+    setExpiryDate(addDays(new Date(), days));
+    if (errors.expiryDate) {
+      setErrors((prev) => ({ ...prev, expiryDate: '' }));
+    }
+  };
+
+  const resetFormForNext = () => {
+    setName('');
+    setQuantity('1');
+    setExpiryDate(addDays(new Date(), 7));
+    setCategory('');
+    setPrice('');
+    setSuggestions([]);
+    setErrors({});
   };
 
   const validate = () => {
-    const newErrors: typeof errors = {};
+    const newErrors: { [key: string]: string } = {};
+
     if (!name.trim()) newErrors.name = 'Название обязательно';
-    if (!quantity.trim()) newErrors.quantity = 'Количество обязательно';
-    else if (isNaN(Number(quantity)) || Number(quantity) <= 0)
+
+    if (!quantity.trim()) {
+      newErrors.quantity = 'Количество обязательно';
+    } else if (isNaN(Number(quantity)) || Number(quantity) <= 0) {
       newErrors.quantity = 'Введите положительное число';
-    if (!expiryDate) newErrors.expiryDate = 'Выберите срок годности';
+    }
+
+    if (!expiryDate) {
+      newErrors.expiryDate = 'Выберите срок годности';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = async () => {
+  const saveProduct = async (stayOnScreen: boolean) => {
     if (isSubmittingRef.current) return;
     if (!validate()) return;
 
@@ -134,6 +182,7 @@ export default function AddProductScreen({ route, navigation }: any) {
       });
       return;
     }
+
     if (ownerType === 'family' && !family?._id) {
       toast.show({
         placement: 'top',
@@ -165,12 +214,18 @@ export default function AddProductScreen({ route, navigation }: any) {
         placement: 'top',
         render: ({ id }) => (
           <Toast nativeID={id} action="success" variant="solid">
-            <ToastTitle>Продукт добавлен</ToastTitle>
+            <ToastTitle>
+              {stayOnScreen ? 'Сохранено, можно добавить следующий' : 'Продукт добавлен'}
+            </ToastTitle>
           </Toast>
         ),
       });
 
-      navigation.goBack();
+      if (stayOnScreen) {
+        resetFormForNext();
+      } else {
+        navigation.goBack();
+      }
     } catch (error) {
       toast.show({
         placement: 'top',
@@ -188,191 +243,352 @@ export default function AddProductScreen({ route, navigation }: any) {
     }
   };
 
-  const onDateChange = (event: any, selectedDate?: Date) => {
+  const onDateChange = (_event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) setExpiryDate(selectedDate);
+    if (selectedDate) {
+      setExpiryDate(selectedDate);
+      if (errors.expiryDate) {
+        setErrors((prev) => ({ ...prev, expiryDate: '' }));
+      }
+    }
   };
 
   return (
-    <VStack flex={1} bg="$backgroundLight100" p="$4" space="lg">
-      {/* Переключатель типа продукта (только если пришли не с экрана выбора) */}
-      {!initialOwnerType && family && (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: '#F5F7FA' }}
+      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+      keyboardShouldPersistTaps="handled"
+    >
+      <VStack space="lg">
+        {!initialOwnerType && family && (
+          <HStack space="md">
+            <Button
+              flex={1}
+              variant={ownerType === 'personal' ? 'solid' : 'outline'}
+              onPress={() => setOwnerType('personal')}
+            >
+              <ButtonText>📦 Личный</ButtonText>
+            </Button>
+            <Button
+              flex={1}
+              variant={ownerType === 'family' ? 'solid' : 'outline'}
+              onPress={() => setOwnerType('family')}
+            >
+              <ButtonText>👨‍👩‍👧‍👦 Семейный</ButtonText>
+            </Button>
+          </HStack>
+        )}
+
+        <Text fontSize="$sm" color="$gray500" textAlign="center">
+          {ownerType === 'family'
+            ? 'Продукт будет добавлен в общий список семьи'
+            : 'Продукт будет виден только вам'}
+        </Text>
+
+        <Box bg="$white" borderRadius="$2xl" p="$4">
+          <VStack space="md">
+            <Text fontSize="$lg" fontWeight="$bold">
+              Быстрое добавление
+            </Text>
+
+            <FormControl isInvalid={!!errors.name}>
+              <FormControlLabel>
+                <FormControlLabelText>Название</FormControlLabelText>
+              </FormControlLabel>
+              <Input>
+                <InputField
+                  autoFocus
+                  placeholder="Например, Молоко"
+                  value={name}
+                  onChangeText={(text) => {
+                    setName(text);
+                    if (errors.name) {
+                      setErrors((prev) => ({ ...prev, name: '' }));
+                    }
+                  }}
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  onSubmitEditing={() => quantityRef.current?.focus?.()}
+                />
+              </Input>
+
+              {suggestions.length > 0 && (
+                <VStack
+                  bg="$white"
+                  borderWidth={1}
+                  borderColor="$borderLight200"
+                  borderRadius="$sm"
+                  mt="$1"
+                  maxHeight={200}
+                  style={{ overflow: 'hidden' }}
+                >
+                  {loadingSuggestions ? (
+                    <Text p="$3" color="$textLight400">
+                      Загрузка...
+                    </Text>
+                  ) : (
+                    <FlatList
+                      data={suggestions}
+                      keyExtractor={(item, index) => `${item._id || index}`}
+                      keyboardShouldPersistTaps="handled"
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
+                          onPress={() => handleSelectSuggestion(item)}
+                          activeOpacity={0.7}
+                        >
+                          <VStack
+                            p="$3"
+                            borderBottomWidth={1}
+                            borderBottomColor="$borderLight100"
+                          >
+                            <Text bold>{item.name}</Text>
+                            {item.category && (
+                              <Text size="xs" color="$textLight500">
+                                {item.category}
+                              </Text>
+                            )}
+                          </VStack>
+                        </TouchableOpacity>
+                      )}
+                    />
+                  )}
+                </VStack>
+              )}
+
+              <FormControlError>
+                <FormControlErrorText>{errors.name}</FormControlErrorText>
+              </FormControlError>
+            </FormControl>
+
+            <FormControl isInvalid={!!errors.quantity}>
+              <FormControlLabel>
+                <FormControlLabelText>Количество</FormControlLabelText>
+              </FormControlLabel>
+
+              <HStack space="sm" alignItems="center">
+                <TouchableOpacity
+                  style={styles.qtyButton}
+                  onPress={() => changeQuantity(-1)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.qtyButtonText}>−</Text>
+                </TouchableOpacity>
+
+                <Input flex={1}>
+                  <InputField
+                    ref={quantityRef}
+                    placeholder="1"
+                    keyboardType="numeric"
+                    value={quantity}
+                    onChangeText={(text) => {
+                      setQuantity(text);
+                      if (errors.quantity) {
+                        setErrors((prev) => ({ ...prev, quantity: '' }));
+                      }
+                    }}
+                    returnKeyType="next"
+                    blurOnSubmit={false}
+                    onSubmitEditing={() => categoryRef.current?.focus?.()}
+                  />
+                </Input>
+
+                <TouchableOpacity
+                  style={styles.qtyButton}
+                  onPress={() => changeQuantity(1)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.qtyButtonText}>+</Text>
+                </TouchableOpacity>
+              </HStack>
+
+              <FormControlError>
+                <FormControlErrorText>{errors.quantity}</FormControlErrorText>
+              </FormControlError>
+            </FormControl>
+
+            <VStack space="xs">
+              <Text fontWeight="$medium">Единица измерения</Text>
+              <HStack flexWrap="wrap">
+                {UNITS.map((u) => {
+                  const active = unit === u;
+                  return (
+                    <TouchableOpacity
+                      key={u}
+                      onPress={() => setUnit(u)}
+                      activeOpacity={0.8}
+                      style={[
+                        styles.chip,
+                        active && styles.chipActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          active && styles.chipTextActive,
+                        ]}
+                      >
+                        {u}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </HStack>
+            </VStack>
+
+            <FormControl isInvalid={!!errors.expiryDate}>
+              <FormControlLabel>
+                <FormControlLabelText>Срок годности</FormControlLabelText>
+              </FormControlLabel>
+
+              <HStack flexWrap="wrap" mb="$2">
+                {QUICK_EXPIRY_DAYS.map((days) => (
+                  <TouchableOpacity
+                    key={days}
+                    onPress={() => setQuickExpiry(days)}
+                    activeOpacity={0.8}
+                    style={styles.quickDateChip}
+                  >
+                    <Text style={styles.quickDateChipText}>+{days}д</Text>
+                  </TouchableOpacity>
+                ))}
+              </HStack>
+
+              <Button
+                variant="outline"
+                onPress={() => setShowDatePicker(true)}
+                justifyContent="flex-start"
+              >
+                <ButtonText>{expiryDate.toLocaleDateString()}</ButtonText>
+              </Button>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={expiryDate}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={onDateChange}
+                />
+              )}
+
+              <FormControlError>
+                <FormControlErrorText>{errors.expiryDate}</FormControlErrorText>
+              </FormControlError>
+            </FormControl>
+
+            <FormControl>
+              <FormControlLabel>
+                <FormControlLabelText>Категория</FormControlLabelText>
+              </FormControlLabel>
+              <Input>
+                <InputField
+                  ref={categoryRef}
+                  placeholder="Например, Молочные"
+                  value={category}
+                  onChangeText={setCategory}
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  onSubmitEditing={() => priceRef.current?.focus?.()}
+                />
+              </Input>
+            </FormControl>
+
+            <FormControl>
+              <FormControlLabel>
+                <FormControlLabelText>Цена</FormControlLabelText>
+              </FormControlLabel>
+              <Input>
+                <InputField
+                  ref={priceRef}
+                  placeholder="99.90"
+                  keyboardType="numeric"
+                  value={price}
+                  onChangeText={setPrice}
+                  returnKeyType="done"
+                  onSubmitEditing={() => saveProduct(false)}
+                />
+              </Input>
+            </FormControl>
+          </VStack>
+        </Box>
+
         <HStack space="md">
           <Button
             flex={1}
-            variant={ownerType === 'personal' ? 'solid' : 'outline'}
-            onPress={() => setOwnerType('personal')}
+            variant="outline"
+            onPress={() => navigation.goBack()}
+            isDisabled={isSubmitting}
           >
-            <ButtonText>📦 Личный</ButtonText>
+            <ButtonText>Отмена</ButtonText>
           </Button>
+
           <Button
             flex={1}
-            variant={ownerType === 'family' ? 'solid' : 'outline'}
-            onPress={() => setOwnerType('family')}
+            variant="outline"
+            onPress={() => saveProduct(true)}
+            isDisabled={isSubmitting}
           >
-            <ButtonText>👨‍👩‍👧‍👦 Семейный</ButtonText>
+            <ButtonText>
+              {isSubmitting ? 'Сохранение...' : 'Сохр. и ещё'}
+            </ButtonText>
           </Button>
         </HStack>
-      )}
 
-      {/* Индикатор типа */}
-      <Text fontSize="$sm" color="$gray500" textAlign="center">
-        {ownerType === 'family' 
-          ? 'Продукт будет добавлен в общий список семьи' 
-          : 'Продукт будет виден только вам'}
-      </Text>
-
-      <FormControl isInvalid={!!errors.name}>
-        <FormControlLabel>
-          <FormControlLabelText>Название</FormControlLabelText>
-        </FormControlLabel>
-        <Input>
-          <InputField
-            placeholder="Например, Молоко (минимум 2 буквы)"
-            value={name}
-            onChangeText={setName}
-          />
-        </Input>
-
-        {suggestions.length > 0 && (
-          <VStack
-            bg="$white"
-            borderWidth={1}
-            borderColor="$borderLight200"
-            borderRadius="$sm"
-            mt="$1"
-            maxHeight={200}
-            style={{ overflow: 'hidden' }}
-          >
-            {loading ? (
-              <Text p="$3" color="$textLight400">Загрузка...</Text>
-            ) : (
-              <FlatList
-                data={suggestions}
-                keyExtractor={(item, index) => index.toString()}
-                keyboardShouldPersistTaps="handled"
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    onPress={() => handleSelect(item)}
-                    activeOpacity={0.7}
-                  >
-                    <VStack p="$3" borderBottomWidth={1} borderBottomColor="$borderLight100">
-                      <Text bold>{item.name}</Text>
-                      {item.category && <Text size="xs" color="$textLight500">{item.category}</Text>}
-                    </VStack>
-                  </TouchableOpacity>
-                )}
-              />
-            )}
-          </VStack>
-        )}
-
-        <FormControlError>
-          <FormControlErrorText>{errors.name}</FormControlErrorText>
-        </FormControlError>
-      </FormControl>
-
-      <HStack space="sm" justifyContent="space-between">
-        <FormControl isInvalid={!!errors.quantity} flex={1}>
-          <FormControlLabel>
-            <FormControlLabelText>Количество</FormControlLabelText>
-          </FormControlLabel>
-          <Input>
-            <InputField
-              placeholder="2"
-              keyboardType="numeric"
-              value={quantity}
-              onChangeText={setQuantity}
-            />
-          </Input>
-          <FormControlError>
-            <FormControlErrorText>{errors.quantity}</FormControlErrorText>
-          </FormControlError>
-        </FormControl>
-
-        <FormControl flex={1}>
-          <FormControlLabel>
-            <FormControlLabelText>Ед. изм.</FormControlLabelText>
-          </FormControlLabel>
-          <Select selectedValue={unit} onValueChange={setUnit}>
-            <SelectTrigger variant="outline" size="md">
-              <SelectInput placeholder="Выберите" />
-              <Icon as={ChevronDownIcon} mr="$3" />
-            </SelectTrigger>
-            <SelectPortal>
-              <SelectBackdrop />
-              <SelectContent>
-                <SelectDragIndicatorWrapper>
-                  <SelectDragIndicator />
-                </SelectDragIndicatorWrapper>
-                {UNITS.map((u) => (
-                  <SelectItem key={u} label={u} value={u} />
-                ))}
-              </SelectContent>
-            </SelectPortal>
-          </Select>
-        </FormControl>
-      </HStack>
-
-      <FormControl isInvalid={!!errors.expiryDate}>
-        <FormControlLabel>
-          <FormControlLabelText>Срок годности</FormControlLabelText>
-        </FormControlLabel>
         <Button
-          variant="outline"
-          onPress={() => setShowDatePicker(true)}
-          justifyContent="flex-start"
+          bg="$blue500"
+          onPress={() => saveProduct(false)}
+          isDisabled={isSubmitting}
         >
-          <ButtonText>{expiryDate.toLocaleDateString()}</ButtonText>
+          <ButtonText>
+            {isSubmitting ? 'Сохранение...' : 'Сохранить'}
+          </ButtonText>
         </Button>
-        {showDatePicker && (
-          <DateTimePicker
-            value={expiryDate}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={onDateChange}
-          />
-        )}
-        <FormControlError>
-          <FormControlErrorText>{errors.expiryDate}</FormControlErrorText>
-        </FormControlError>
-      </FormControl>
-
-      <FormControl>
-        <FormControlLabel>
-          <FormControlLabelText>Категория (необязательно)</FormControlLabelText>
-        </FormControlLabel>
-        <Input>
-          <InputField
-            placeholder="Например, Молочные"
-            value={category}
-            onChangeText={setCategory}
-          />
-        </Input>
-      </FormControl>
-
-      <FormControl>
-        <FormControlLabel>
-          <FormControlLabelText>Цена (необязательно)</FormControlLabelText>
-        </FormControlLabel>
-        <Input>
-          <InputField
-            placeholder="99.90"
-            keyboardType="numeric"
-            value={price}
-            onChangeText={setPrice}
-          />
-        </Input>
-      </FormControl>
-
-      <HStack space="md" mt="$4">
-        <Button flex={1} variant="outline" onPress={() => navigation.goBack()} isDisabled={isSubmitting}>
-          <ButtonText>Отмена</ButtonText>
-        </Button>
-        <Button flex={1} bg="$blue500" onPress={handleSave} isDisabled={isSubmitting}>
-          <ButtonText>Сохранить</ButtonText>
-        </Button>
-      </HStack>
-    </VStack>
+      </VStack>
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  qtyButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#EEF2F7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qtyButtonText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: '#EEF2F7',
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  chipActive: {
+    backgroundColor: '#2563EB',
+  },
+  chipText: {
+    color: '#374151',
+    fontWeight: '600',
+  },
+  chipTextActive: {
+    color: '#FFFFFF',
+  },
+  quickDateChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: '#ECFDF5',
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  quickDateChipText: {
+    color: '#047857',
+    fontWeight: '600',
+  },
+});
