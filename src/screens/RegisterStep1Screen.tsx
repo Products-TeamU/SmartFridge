@@ -40,7 +40,7 @@ export default function RegisterStep1Screen({ navigation }: any) {
           Шаг 1. Введите данные учётной записи
         </Text>
         <Text fontSize="$sm" color="$textLight500" textAlign="center" mb="$2">
-          Пожалуйста, придумайте email и надёжный пароль для входа в систему.
+          Пожалуйста, введите email и придумайте надёжный пароль для входа в систему.
         </Text>
 
         <FormControl>
